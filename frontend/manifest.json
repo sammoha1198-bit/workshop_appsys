@@ -1,0 +1,11 @@
+{
+  "name": "السامي لإدارة الورشة",
+  "short_name": "ورشة السامي",
+  "dir": "rtl",
+  "lang": "ar",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#0ea5e9",
+  "theme_color": "#0ea5e9",
+  "icons": []
+}

@@ -1,0 +1,16 @@
+# Python / FastAPI
+__pycache__/
+*.pyc
+.venv/
+env/
+*.sqlite3
+*.db
+
+# Node/Tools (if any)
+node_modules/
+dist/
+build/
+
+# OS junk
+.DS_Store
+Thumbs.db
