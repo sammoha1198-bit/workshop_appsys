@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: alsami-workshop-backend
+    env: python
+    rootDirectory: ./backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    autoDeploy: true
+    plan: free
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11
+    healthCheckPath: /api/health
