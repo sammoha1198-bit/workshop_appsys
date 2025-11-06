@@ -21,11 +21,12 @@ app = FastAPI(title="Alsami Workshop Backend", version="4.0-final")
 # ---------------- CORS ----------------
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # افتحها الآن (يمكن تضييقها لاحقًا)
-    allow_credentials=True,
+    allow_origins=["https://workshop-frontend-cmqd.onrender.com"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 # ---------------- Utilities ----------------
 def _now_iso() -> str:
