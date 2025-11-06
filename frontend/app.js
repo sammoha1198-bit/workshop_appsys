@@ -6,10 +6,10 @@
 /* ---------- Config ---------- */
 let API_BASE = (localStorage.getItem('api_base') || '').trim();
 if (!API_BASE) {
-  // على Render: استخدم مسار نسبي /api — محليًا: 127.0.0.1:9000/api
-  const onRender = /alsami-workshop-backend\.onrender\.com$/i.test(location.hostname);
-  API_BASE = onRender ? '/api' : 'http://127.0.0.1:9000/api';
+  // على السيرفر المباشر (Render)
+  API_BASE = 'https://workshop-appsys.onrender.com/api';
 }
+
 
 /* ---------- Helpers ---------- */
 const $  = (s, el = document) => el.querySelector(s);
