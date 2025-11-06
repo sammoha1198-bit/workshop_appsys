@@ -204,43 +204,112 @@ async function doSearch() {
 }
 
 function buildSearchHtml(key, data) {
-  const engines = data?.engines || {}, gens = data?.generators || {};
-  const card = (title, arr) => `
-    <div class="card">
-      <div class="card-title">${title}</div>
-      ${!arr?.length ? '<div class="muted">لا توجد سجلات</div>' :
-        `<div class="mt">${arr.map(r => `
-          <div class="row" style="flex-wrap:wrap;gap:14px;">
-            ${Object.entries(r).map(([k,v]) => `<span class="tag"><b>${escapeHTML(k)}:</b> ${escapeHTML(v??'')}</span>`).join('')}
-          </div>
-        `).join('')}</div>`
-      }
-    </div>
-  `;
+  const engines = data?.engines || {};
+  const gens = data?.generators || {};
+
+  const labels = {
+    // عام
+    serial: 'الرقم التسلسلي',
+    code: 'كود المولد',
+    prevSite: 'الموقع السابق',
+    currSite: 'الموقع الحالي',
+    notes: 'ملاحظات',
+    created_at: 'تاريخ الإدخال',
+    // محركات
+    engineType: 'نوع المحرك',
+    model: 'الموديل',
+    supDate: 'تاريخ التوريد',
+    supplier: 'المورّد',
+    receiver: 'المستلم',
+    requester: 'طالب الطلب',
+    issueDate: 'تاريخ الصرف',
+    rehabber: 'جهة التأهيل',
+    rehabType: 'نوع التأهيل',
+    rehabDate: 'تاريخ التأهيل',
+    inspector: 'الفاحص',
+    description: 'وصف الفحص',
+    checkDate: 'تاريخ الفحص',
+    rehabUp: 'رفع تأهيل',
+    checkUp: 'رفع فحص',
+    rehabUpDate: 'تاريخ رفع التأهيل',
+    checkUpDate: 'تاريخ رفع الفحص',
+    lathe: 'جهة المخرطة',
+    latheDate: 'تاريخ المخرطة',
+    pumpSerial: 'رقم البمب',
+    pumpRehab: 'تأهيل البمب',
+    etype: 'نوع النظام الكهربائي',
+    starter: 'السلف',
+    alternator: 'الدينمو',
+    edate: 'تاريخ العمل الكهربائي',
+    // مولدات
+    gType: 'السعة',
+    vendor: 'الجهة المورّدة',
+    issueDate_gen: 'تاريخ الصرف',
+    elecRehab: 'تأهيل كهربائي',
+  };
+
+  function fmtField(k, v) {
+    if (v === null || v === undefined || v === '') return '';
+    const label = labels[k] || k;
+    return `<span class="tag"><b>${escapeHTML(label)}:</b> ${escapeHTML(v)}</span>`;
+  }
+
+  function recordBlock(rec) {
+    const entries = Object.entries(rec)
+      .filter(([k, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => fmtField(k, v))
+      .join('');
+    return entries
+      ? `<div class="row wrap mt-xs">${entries}</div>`
+      : '<div class="muted">لا توجد تفاصيل</div>';
+  }
+
+  function sectionCard(title, list) {
+    if (!list || !list.length) {
+      return `
+        <div class="card">
+          <div class="card-title">${title}</div>
+          <div class="muted">لا توجد سجلات</div>
+        </div>
+      `;
+    }
+    return `
+      <div class="card">
+        <div class="card-title">${title}</div>
+        ${list.map(recordBlock).join('')}
+      </div>
+    `;
+  }
+
   return `
-    <div class="row" style="justify-content:space-between;align-items:center">
-      <div>نتائج البحث عن: <span class="chip">${escapeHTML(key)}</span></div>
-      <button class="btn-light" onclick="openExport()">تصدير النتائج</button>
+    <div class="card">
+      <div class="row" style="justify-content:space-between;align-items:center">
+        <div>نتائج البحث عن: <span class="chip">${escapeHTML(key)}</span></div>
+        <button class="btn-light" onclick="openExport()">تصدير النتائج</button>
+      </div>
     </div>
+
     <div class="grid-2 mt">
       <div>
-        ${card('محركات - توريد', engines.supply)}
-        ${card('محركات - صرف', engines.issue)}
-        ${card('محركات - تأهيل', engines.rehab)}
-        ${card('محركات - فحص', engines.check)}
-        ${card('محركات - رفع', engines.upload)}
-        ${card('محركات - مخرطة', engines.lathe)}
-        ${card('محركات - بمبات ونوزلات', engines.pump)}
-        ${card('محركات - كهرباء', engines.electrical)}
+        ${sectionCard('محركات - توريد', engines.supply)}
+        ${sectionCard('محركات - صرف', engines.issue)}
+        ${sectionCard('محركات - تأهيل', engines.rehab)}
+        ${sectionCard('محركات - فحص', engines.check)}
+        ${sectionCard('محركات - رفع (ملفات / فحوصات)', engines.upload)}
+        ${sectionCard('محركات - مخرطة', engines.lathe)}
+        ${sectionCard('محركات - بمبات ونوزلات', engines.pump)}
+        ${sectionCard('محركات - كهرباء', engines.electrical)}
       </div>
+
       <div>
-        ${card('مولدات - توريد', gens.supply)}
-        ${card('مولدات - صرف', gens.issue)}
-        ${card('مولدات - فحص/رفع', gens.inspect)}
+        ${sectionCard('مولدات - توريد', gens.supply)}
+        ${sectionCard('مولدات - صرف', gens.issue)}
+        ${sectionCard('مولدات - فحص / رفع', gens.inspect)}
       </div>
     </div>
   `;
 }
+
 
 /* ---------- Export (direct to /api/export/xlsx) ---------- */
 function openExport(){ $('#exportModal')?.classList.remove('hidden'); }
