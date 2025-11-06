@@ -401,13 +401,15 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
     body:
     {
       "scope": "engines"|"generators"|"both",
-      "date_from": "YYYY-MM-DD",   # optional
-      "date_to":   "YYYY-MM-DD",   # optional
-      "filename": "تقرير.xlsx"     # optional
+      "date_from": "YYYY-MM-DD",   # اختياري
+      "date_to":   "YYYY-MM-DD",   # اختياري
+      "filename": "تقرير.xlsx"     # اختياري
     }
 
-    - Engines: one row per serial combining (Supply, Issue, Rehab, Check, Upload, Lathe, Pump, Electrical).
-    - Generators: one row per code combining (Supply, Issue, Inspect).
+    مخرجات:
+    - شيت للمحركات: صف واحد لكل رقم تسلسلي مع أعمدة منفصلة لكل نوع حركة.
+    - شيت للمولدات: صف واحد لكل كود مع أعمدة منفصلة لكل نوع حركة.
+    - لو فيه أكثر من حركة لنفس الرقم/الكود في نفس النوع، يتم دمج القيم في نفس العمود مفصولة بـ " | ".
     """
     ensure_schema(session)
 
@@ -430,7 +432,7 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             return False
         return True
 
-    # Workbook styles
+    # إعداد ملف Excel والتنسيقات
     wb = Workbook()
     header_fill = PatternFill("solid", fgColor="2563eb")
     alt_fill = PatternFill("solid", fgColor="f1f5f9")
@@ -445,23 +447,78 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
         bottom=Side(style="thin", color="DDDDDD"),
     )
 
-    # ------- Engines sheet -------
+    def set_or_join(row: Dict[str, str], key: str, value: str):
+        """يجمع القيم المتعددة لنفس الحقل في نفس العمود."""
+        if not value:
+            return
+        old = row.get(key)
+        if not old:
+            row[key] = value
+        elif value not in old.split(" | "):
+            row[key] = f"{old} | {value}"
+
+    # ===================== Sheet المحركات =====================
     ws_eng = None
     if scope in ("engines", "both"):
         ws_eng = wb.active
         ws_eng.title = "المحركات"
         ws_eng.sheet_view.rightToLeft = True
+
         eng_headers = [
             "الرقم التسلسلي",
-            "بيانات التوريد",
-            "بيانات الصرف",
-            "بيانات التأهيل",
-            "بيانات الفحص",
-            "بيانات الرفع",
-            "بيانات المخرطة",
-            "بيانات البمبات والنوزلات",
-            "بيانات الكهرباء",
+
+            # توريد
+            "توريد - النوع",
+            "توريد - الموديل",
+            "توريد - الموقع السابق",
+            "توريد - تاريخ التوريد",
+            "توريد - المورد",
+            "توريد - ملاحظات",
+
+            # صرف
+            "صرف - الموقع الحالي",
+            "صرف - المستلم",
+            "صرف - طالب الصرف",
+            "صرف - تاريخ الصرف",
+            "صرف - ملاحظات",
+
+            # تأهيل
+            "تأهيل - الجهة",
+            "تأهيل - نوع التأهيل",
+            "تأهيل - تاريخ التأهيل",
+            "تأهيل - ملاحظات",
+
+            # فحص
+            "فحص - الفاحص",
+            "فحص - الوصف",
+            "فحص - تاريخ الفحص",
+            "فحص - ملاحظات",
+
+            # رفع
+            "رفع - رفع تأهيل",
+            "رفع - رفع فحص",
+            "رفع - تاريخ رفع التأهيل",
+            "رفع - تاريخ رفع الفحص",
+            "رفع - ملاحظات",
+
+            # مخرطة
+            "مخرطة - التفاصيل",
+            "مخرطة - تاريخ المخرطة",
+            "مخرطة - ملاحظات",
+
+            # بمبات ونوزلات
+            "بمبات/نوزلات - رقم البمب",
+            "بمبات/نوزلات - تفاصيل التأهيل",
+            "بمبات/نوزلات - ملاحظات",
+
+            # كهرباء
+            "كهرباء - النوع",
+            "كهرباء - السلف",
+            "كهرباء - الدينمو",
+            "كهرباء - تاريخ",
+            "كهرباء - ملاحظات",
         ]
+
         ws_eng.append(eng_headers)
         for i in range(1, len(eng_headers) + 1):
             c = ws_eng.cell(row=1, column=i)
@@ -469,7 +526,7 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             c.font = header_font
             c.alignment = align_right
             c.border = thin_border
-            ws_eng.column_dimensions[c.column_letter].width = 35
+            ws_eng.column_dimensions[c.column_letter].width = 25
 
         supplies = session.exec(select(models.EngineSupply)).all()
         issues   = session.exec(select(models.EngineIssue)).all()
@@ -482,65 +539,137 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
 
         by_serial: Dict[str, Dict[str, str]] = {}
 
-        def add(seg: str, serial: str, text: str, date_field: Optional[str] = None):
-            if not serial or not text:
-                return
-            if date_field and not in_range(date_field):
-                return
-            row = by_serial.setdefault(serial, {"serial": serial})
-            row[seg] = (row.get(seg, "") + (" | " if row.get(seg) else "") + text)
-
+        # توريد
         for r in supplies:
             if not in_range(r.supDate):
                 continue
-            txt = f"نوع:{r.engineType or ''} موديل:{r.model or ''} موقع سابق:{r.prevSite or ''} تاريخ:{r.supDate or ''} مورد:{r.supplier or ''} {r.notes or ''}"
-            add("supply", r.serial, txt, r.supDate)
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "sup_type",      r.engineType or "")
+            set_or_join(row, "sup_model",     r.model or "")
+            set_or_join(row, "sup_prevSite",  r.prevSite or "")
+            set_or_join(row, "sup_date",      r.supDate or "")
+            set_or_join(row, "sup_supplier",  r.supplier or "")
+            set_or_join(row, "sup_notes",     r.notes or "")
 
+        # صرف
         for r in issues:
-            txt = f"موقع حالي:{r.currSite or ''} مستلم:{r.receiver or ''} طالب:{r.requester or ''} تاريخ:{r.issueDate or ''} {r.notes or ''}"
-            add("issue", r.serial, txt, r.issueDate)
+            if not in_range(r.issueDate):
+                continue
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "iss_currSite",  r.currSite or "")
+            set_or_join(row, "iss_receiver",  r.receiver or "")
+            set_or_join(row, "iss_requester", r.requester or "")
+            set_or_join(row, "iss_date",      r.issueDate or "")
+            set_or_join(row, "iss_notes",     r.notes or "")
 
+        # تأهيل
         for r in rehabs:
-            txt = f"جهة:{r.rehabber or ''} نوع:{r.rehabType or ''} تاريخ:{r.rehabDate or ''} {r.notes or ''}"
-            add("rehab", r.serial, txt, r.rehabDate)
+            if not in_range(r.rehabDate):
+                continue
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "reh_rehabber",  r.rehabber or "")
+            set_or_join(row, "reh_type",      r.rehabType or "")
+            set_or_join(row, "reh_date",      r.rehabDate or "")
+            set_or_join(row, "reh_notes",     r.notes or "")
 
+        # فحص
         for r in checks:
-            # tolerate description/desc differences
-            desc = getattr(r, "description", None) or getattr(r, "desc", "")
-            txt = f"فاحص:{r.inspector or ''} وصف:{desc or ''} تاريخ:{r.checkDate or ''} {r.notes or ''}"
-            add("check", r.serial, txt, r.checkDate)
+            if not in_range(r.checkDate):
+                continue
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            desc = getattr(r, "description", None) or getattr(r, "desc", "") or ""
+            set_or_join(row, "chk_inspector", r.inspector or "")
+            set_or_join(row, "chk_desc",      desc)
+            set_or_join(row, "chk_date",      r.checkDate or "")
+            set_or_join(row, "chk_notes",     r.notes or "")
 
+        # رفع
         for r in uploads:
-            txt = f"رفع تأهيل:{r.rehabUp or ''} رفع فحص:{r.checkUp or ''} تاريخ تأهيل:{r.rehabUpDate or ''} تاريخ فحص:{r.checkUpDate or ''} {r.notes or ''}"
-            add("upload", r.serial, txt)
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "upl_rehabUp",     r.rehabUp or "")
+            set_or_join(row, "upl_checkUp",     r.checkUp or "")
+            set_or_join(row, "upl_rehabUpDate", r.rehabUpDate or "")
+            set_or_join(row, "upl_checkUpDate", r.checkUpDate or "")
+            set_or_join(row, "upl_notes",       r.notes or "")
 
+        # مخرطة
         for r in lathes:
-            txt = f"مخرطة:{r.lathe or ''} تاريخ:{r.latheDate or ''} {r.notes or ''}"
-            add("lathe", r.serial, txt, r.latheDate)
+            if not in_range(r.latheDate):
+                continue
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "lathe_name",  r.lathe or "")
+            set_or_join(row, "lathe_date",  r.latheDate or "")
+            set_or_join(row, "lathe_notes", r.notes or "")
 
+        # بمبات ونوزلات
         for r in pumps:
-            txt = f"بمب:{r.pumpSerial or ''} تأهيل:{r.pumpRehab or ''} {r.notes or ''}"
-            add("pump", r.serial, txt)
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "pump_serial", r.pumpSerial or "")
+            set_or_join(row, "pump_rehab",  r.pumpRehab or "")
+            set_or_join(row, "pump_notes",  r.notes or "")
 
+        # كهرباء
         for r in elecs:
-            txt = f"نوع:{r.etype or ''} سلف:{r.starter or ''} دينمو:{r.alternator or ''} تاريخ:{r.edate or ''} {r.notes or ''}"
-            add("elec", r.serial, txt, r.edate)
+            if not in_range(r.edate):
+                continue
+            row = by_serial.setdefault(r.serial, {"serial": r.serial})
+            set_or_join(row, "elec_type",   r.etype or "")
+            set_or_join(row, "elec_start",  r.starter or "")
+            set_or_join(row, "elec_alt",    r.alternator or "")
+            set_or_join(row, "elec_date",   r.edate or "")
+            set_or_join(row, "elec_notes",  r.notes or "")
 
+        # كتابة الصفوف
         row_idx = 2
         for serial, segs in sorted(by_serial.items()):
-            row = [
+            row_vals = [
                 serial,
-                segs.get("supply", ""),
-                segs.get("issue", ""),
-                segs.get("rehab", ""),
-                segs.get("check", ""),
-                segs.get("upload", ""),
-                segs.get("lathe", ""),
-                segs.get("pump", ""),
-                segs.get("elec", ""),
+
+                segs.get("sup_type", ""),
+                segs.get("sup_model", ""),
+                segs.get("sup_prevSite", ""),
+                segs.get("sup_date", ""),
+                segs.get("sup_supplier", ""),
+                segs.get("sup_notes", ""),
+
+                segs.get("iss_currSite", ""),
+                segs.get("iss_receiver", ""),
+                segs.get("iss_requester", ""),
+                segs.get("iss_date", ""),
+                segs.get("iss_notes", ""),
+
+                segs.get("reh_rehabber", ""),
+                segs.get("reh_type", ""),
+                segs.get("reh_date", ""),
+                segs.get("reh_notes", ""),
+
+                segs.get("chk_inspector", ""),
+                segs.get("chk_desc", ""),
+                segs.get("chk_date", ""),
+                segs.get("chk_notes", ""),
+
+                segs.get("upl_rehabUp", ""),
+                segs.get("upl_checkUp", ""),
+                segs.get("upl_rehabUpDate", ""),
+                segs.get("upl_checkUpDate", ""),
+                segs.get("upl_notes", ""),
+
+                segs.get("lathe_name", ""),
+                segs.get("lathe_date", ""),
+                segs.get("lathe_notes", ""),
+
+                segs.get("pump_serial", ""),
+                segs.get("pump_rehab", ""),
+                segs.get("pump_notes", ""),
+
+                segs.get("elec_type", ""),
+                segs.get("elec_start", ""),
+                segs.get("elec_alt", ""),
+                segs.get("elec_date", ""),
+                segs.get("elec_notes", ""),
             ]
-            ws_eng.append(row)
-            for col in range(1, len(row) + 1):
+            ws_eng.append(row_vals)
+            for col in range(1, len(row_vals) + 1):
                 c = ws_eng.cell(row=row_idx, column=col)
                 c.font = normal_font
                 c.alignment = align_right
@@ -548,13 +677,40 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
                 c.fill = alt_fill if row_idx % 2 else white_fill
             row_idx += 1
 
-    # ------- Generators sheet -------
+    # ===================== Sheet المولدات =====================
     ws_gen = None
     if scope in ("generators", "both"):
         ws_gen = wb.create_sheet(title="المولدات") if ws_eng else wb.active
         ws_gen.title = "المولدات"
         ws_gen.sheet_view.rightToLeft = True
-        gen_headers = ["كود المولد", "بيانات التوريد", "بيانات الصرف", "بيانات الفحص / الرفع"]
+
+        gen_headers = [
+            "كود المولد",
+
+            # توريد
+            "توريد - السعة",
+            "توريد - الموديل",
+            "توريد - الموقع السابق",
+            "توريد - تاريخ التوريد",
+            "توريد - الجهة",
+            "توريد - المورد",
+            "توريد - ملاحظات",
+
+            # صرف
+            "صرف - تاريخ الصرف",
+            "صرف - المستلم",
+            "صرف - طالب الصرف",
+            "صرف - الموقع الحالي",
+            "صرف - ملاحظات",
+
+            # فحص/رفع
+            "فحص/رفع - المفتش",
+            "فحص/رفع - تأهيل كهربائي",
+            "فحص/رفع - تاريخ التأهيل",
+            "فحص/رفع - رفع تأهيل",
+            "فحص/رفع - رفع فحص",
+            "فحص/رفع - ملاحظات",
+        ]
         ws_gen.append(gen_headers)
         for i in range(1, len(gen_headers) + 1):
             c = ws_gen.cell(row=1, column=i)
@@ -562,7 +718,7 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             c.font = header_font
             c.alignment = align_right
             c.border = thin_border
-            ws_gen.column_dimensions[c.column_letter].width = 35
+            ws_gen.column_dimensions[c.column_letter].width = 25
 
         sup = session.exec(select(models.GeneratorSupply)).all()
         iss = session.exec(select(models.GeneratorIssue)).all()
@@ -570,33 +726,73 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
 
         by_code: Dict[str, Dict[str, str]] = {}
 
-        def addg(seg: str, code: str, text: str, date_field: Optional[str] = None):
-            if not code or not text:
-                return
-            if date_field and not in_range(date_field):
-                return
-            row = by_code.setdefault(code, {"code": code})
-            row[seg] = (row.get(seg, "") + (" | " if row.get(seg) else "") + text)
-
+        # توريد
         for r in sup:
             if not in_range(r.supDate):
                 continue
-            txt = f"سعة:{r.gType or ''} موديل:{r.model or ''} موقع سابق:{r.prevSite or ''} تاريخ:{r.supDate or ''} جهة:{r.supplier or ''} مورد:{r.vendor or ''} {r.notes or ''}"
-            addg("supply", r.code, txt, r.supDate)
+            row = by_code.setdefault(r.code, {"code": r.code})
+            set_or_join(row, "sup_gType",    r.gType or "")
+            set_or_join(row, "sup_model",    r.model or "")
+            set_or_join(row, "sup_prevSite", r.prevSite or "")
+            set_or_join(row, "sup_date",     r.supDate or "")
+            set_or_join(row, "sup_supplier", r.supplier or "")
+            set_or_join(row, "sup_vendor",   r.vendor or "")
+            set_or_join(row, "sup_notes",    r.notes or "")
 
+        # صرف
         for r in iss:
-            txt = f"تاريخ:{r.issueDate or ''} مستلم:{r.receiver or ''} طالب:{r.requester or ''} موقع حالي:{r.currSite or ''} {r.notes or ''}"
-            addg("issue", r.code, txt, r.issueDate)
+            if not in_range(r.issueDate):
+                continue
+            row = by_code.setdefault(r.code, {"code": r.code})
+            set_or_join(row, "iss_date",      r.issueDate or "")
+            set_or_join(row, "iss_receiver",  r.receiver or "")
+            set_or_join(row, "iss_requester", r.requester or "")
+            set_or_join(row, "iss_currSite",  r.currSite or "")
+            set_or_join(row, "iss_notes",     r.notes or "")
 
+        # فحص/رفع
         for r in ins:
-            txt = f"مفتش:{r.inspector or ''} تأهيل كهربائي:{r.elecRehab or ''} تاريخ التأهيل:{r.rehabDate or ''} رفع تأهيل:{r.rehabUp or ''} رفع فحص:{r.checkUp or ''} {r.notes or ''}"
-            addg("inspect", r.code, txt, r.rehabDate)
+            if not in_range(r.rehabDate):
+                # لو مافي rehabDate نعتبره داخل النطاق
+                if date_from or date_to:
+                    continue
+            row = by_code.setdefault(r.code, {"code": r.code})
+            set_or_join(row, "ins_inspector", r.inspector or "")
+            set_or_join(row, "ins_elecRehab", r.elecRehab or "")
+            set_or_join(row, "ins_rehabDate", r.rehabDate or "")
+            set_or_join(row, "ins_rehabUp",   r.rehabUp or "")
+            set_or_join(row, "ins_checkUp",   r.checkUp or "")
+            set_or_join(row, "ins_notes",     r.notes or "")
 
+        # كتابة الصفوف
         row_idx = 2
         for code, segs in sorted(by_code.items()):
-            row = [code, segs.get("supply", ""), segs.get("issue", ""), segs.get("inspect", "")]
-            ws_gen.append(row)
-            for col in range(1, len(row) + 1):
+            row_vals = [
+                code,
+
+                segs.get("sup_gType", ""),
+                segs.get("sup_model", ""),
+                segs.get("sup_prevSite", ""),
+                segs.get("sup_date", ""),
+                segs.get("sup_supplier", ""),
+                segs.get("sup_vendor", ""),
+                segs.get("sup_notes", ""),
+
+                segs.get("iss_date", ""),
+                segs.get("iss_receiver", ""),
+                segs.get("iss_requester", ""),
+                segs.get("iss_currSite", ""),
+                segs.get("iss_notes", ""),
+
+                segs.get("ins_inspector", ""),
+                segs.get("ins_elecRehab", ""),
+                segs.get("ins_rehabDate", ""),
+                segs.get("ins_rehabUp", ""),
+                segs.get("ins_checkUp", ""),
+                segs.get("ins_notes", ""),
+            ]
+            ws_gen.append(row_vals)
+            for col in range(1, len(row_vals) + 1):
                 c = ws_gen.cell(row=row_idx, column=col)
                 c.font = normal_font
                 c.alignment = align_right
@@ -604,20 +800,20 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
                 c.fill = alt_fill if row_idx % 2 else white_fill
             row_idx += 1
 
-    # No data at all?
+    # لو لا محركات ولا مولدات
     if not ws_eng and not ws_gen:
         ws = wb.active
         ws.title = "فارغ"
         ws.append(["لا توجد بيانات للتصدير"])
 
-    # Signature
+    # توقيع
     ws = ws_gen or ws_eng or wb.active
     sig = ws.cell(row=ws.max_row + 2, column=1)
     sig.value = f"تاريخ التوليد: {dt.datetime.utcnow().isoformat()}"
     sig.alignment = align_right
     sig.font = Font(italic=True, color="666666", name="Arial")
 
-    # Stream out
+    # تجهيز الاستجابة
     buf = BytesIO()
     wb.save(buf)
     buf.seek(0)
@@ -626,6 +822,7 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
         "Content-Disposition": f"attachment; filename={safe_filename}; filename*=UTF-8''{encoded_name}",
         "Access-Control-Expose-Headers": "Content-Disposition",
     }
+
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
