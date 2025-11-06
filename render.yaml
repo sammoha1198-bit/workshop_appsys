@@ -1,4 +1,5 @@
 services:
+  # --- Backend (FastAPI) ---
   - type: web
     name: alsami-workshop-backend
     env: python
@@ -6,9 +7,16 @@ services:
     buildCommand: pip install -r requirements.txt
     startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
     autoDeploy: true
+    plan: free
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
-      # استخدم قاعدة بيانات SQLite في مجلد دائم الكتابة على Render
-      - key: DB_PATH
-        value: /data/workshop.db
+      # If you ever switch to Postgres, add DATABASE_URL here. For SQLite, not needed.
+
+  # --- Frontend (static HTML/JS/CSS) ---
+  - type: static
+    name: alsami-workshop-frontend
+    rootDir: frontend          # <-- NO trailing space
+    buildCommand: ""           # no build step for plain HTML/JS
+    staticPublishPath: .       # publish everything inside /frontend
+    autoDeploy: true
