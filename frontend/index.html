@@ -85,7 +85,7 @@
           <label>رابط واجهة البرمجة (API Base)</label>
           <input id="apiBaseInput" class="input"
                  placeholder="مثال: https://workshop-appsys.onrender.com/api" />
-          <div class="hint">اضبط هذا الحقل مرة واحدة ليشير إلى سيرفر الـ Backend.</div>
+          
         </div>
       </div>
       <div class="modal-footer">
@@ -130,7 +130,6 @@
             <input id="toDate" type="date" class="input" />
           </div>
         </div>
-        <div class="hint">اترك التواريخ فارغة لتصدير كامل البيانات.</div>
       </div>
       <div class="modal-footer">
         <button id="doExport" class="btn-primary flex-grow">تصدير</button>
@@ -147,9 +146,9 @@
       <!-- تايلز رئيسية (7 وظائف أساسية) -->
       <div class="card home-grid">
         <div class="card-header">
-          <h2 class="card-title">لوحة التحكم الرئيسية</h2>
-          <p class="card-sub">وصول سريع لكل ما يحتاجه موظف الورشة في عمله اليومي.</p>
-        </div>
+  <h2 class="card-title">لوحة التحكم الرئيسية</h2>
+</div>
+
         <div class="home-tiles">
           <!-- البحث: يوجّه لنفس الصفحة مع التركيز على خانة البحث -->
           <button class="tile tile-blue" data-go="home">
@@ -172,19 +171,20 @@
             <span class="subtitle">إدارة كاملة لحركات المولدات.</span>
           </button>
 
-          <!-- آخر ثلاث محركات -->
-          <button class="tile tile-amber" data-go="home">
-            <span class="icon">📦</span>
-            <span class="title">آخر 3 محركات</span>
-            <span class="subtitle">عرض أحدث عمليات المحركات.</span>
-          </button>
+         <button class="tile tile-amber" id="tileLastEngines">
+  <span class="icon">📦</span>
+  <span class="title">آخر 3 محركات</span>
+  <span class="subtitle">عرض أحدث عمليات المحركات.</span>
+</button>
 
-          <!-- آخر ثلاث مولدات -->
-          <button class="tile tile-amber" data-go="home">
-            <span class="icon">⚡</span>
-            <span class="title">آخر 3 مولدات</span>
-            <span class="subtitle">عرض أحدث عمليات المولدات.</span>
-          </button>
+<button class="tile tile-amber" id="tileLastGenerators">
+  <span class="icon">⚡</span>
+  <span class="title">آخر 3 مولدات</span>
+  <span class="subtitle">عرض أحدث عمليات المولدات.</span>
+</button>
+
+
+
 
           <!-- التصدير -->
           <button class="tile tile-indigo" data-view="reports">
@@ -193,45 +193,47 @@
             <span class="subtitle">تقرير Excel رسمي للقيادة.</span>
           </button>
 
-          <!-- الحالة -->
-          <button class="tile tile-green" data-go="home">
-            <span class="icon">📈</span>
-            <span class="title">حالة النظام</span>
-            <span class="subtitle">حالة الخادم والاتصال والإصدار.</span>
-          </button>
+
+<button class="tile tile-green" id="tileStatus">
+  <span class="icon">📈</span>
+  <span class="title">حالة النظام</span>
+  <span class="subtitle">حالة الخادم والاتصال والإصدار.</span>
+</button>
+
         </div>
       </div>
 
       <!-- كروت معلومات سريعة -->
       <div class="status-grid">
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">آخر 3 محركات</span>
-            <span class="card-icon">🧰</span>
-          </div>
-          <div id="last3Engines" class="mt"></div>
-        </div>
+  <div id="cardLastEngines" class="card hidden">
+    <div class="card-title-row">
+      <span class="card-title">آخر 3 محركات</span>
+      <span class="card-icon">🧰</span>
+    </div>
+    <div id="last3Engines" class="mt"></div>
+  </div>
 
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">آخر 3 مولدات</span>
-            <span class="card-icon">🔌</span>
-          </div>
-          <div id="last3Generators" class="mt"></div>
-        </div>
+  <div id="cardLastGenerators" class="card hidden">
+    <div class="card-title-row">
+      <span class="card-title">آخر 3 مولدات</span>
+      <span class="card-icon">🔌</span>
+    </div>
+    <div id="last3Generators" class="mt"></div>
+  </div>
 
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">حالة النظام</span>
-            <span class="card-icon">📊</span>
-          </div>
-          <ul class="status-list">
-            <li>اتصال الخادم: <span id="srvStatus" class="tag ok">جيد</span></li>
-            <li>إصدار الواجهة: <span class="tag">v4.0</span></li>
-            <li>المطور: <span class="tag">ALSAMI</span></li>
-          </ul>
-        </div>
-      </div>
+  <div id="cardStatus" class="card hidden">
+    <div class="card-title-row">
+      <span class="card-title">حالة النظام</span>
+      <span class="card-icon">📊</span>
+    </div>
+    <ul class="status-list">
+      <li>اتصال الخادم: <span id="srvStatus" class="tag ok">جيد</span></li>
+      <li>إصدار الواجهة: <span class="tag">v4.0</span></li>
+      <li>المطور: <span class="tag">ALSAMI</span></li>
+    </ul>
+  </div>
+</div>
+
 
       <!-- نتائج البحث -->
       <div class="card" id="searchCard">
@@ -251,9 +253,7 @@
         <button class="btn-back" data-return>الرجوع للرئيسية</button>
         <h2>لوحة المحركات</h2>
       </div>
-      <p class="view-desc">
-        اختر العملية المطلوبة على المحرك. تم تقسيم العمليات لبطاقات واضحة لتسريع إدخال البيانات وتقليل الأخطاء.
-      </p>
+      
       <div class="tiles-wrap">
         <button class="tile tile-teal" data-view="eng-supply">
           <span class="icon">➕</span>
@@ -465,7 +465,7 @@
         <button class="btn-back" data-return>رجوع</button>
         <h2>لوحة المولدات</h2>
       </div>
-      <p class="view-desc">إدارة دورة حياة المولد من التوريد حتى الفحص.</p>
+    
       <div class="tiles-wrap">
         <button class="tile tile-purple" data-go="gen-supply">
           <span class="icon">➕</span>
@@ -564,16 +564,13 @@
         <h2>التقارير والتصدير</h2>
       </div>
       <div class="card">
-        <p class="view-desc">
-          من هنا يمكنك إنشاء تقارير Excel رسمية للمحركات والمولدات وإصلاح أي أعمدة ناقصة في قاعدة البيانات.
-        </p>
+      
         <div class="row gap">
           <button id="openExport" class="btn-primary">فتح نافذة التصدير</button>
           <button id="runRepair" class="btn-light">إصلاح الأعمدة (Repair)</button>
         </div>
-        <div class="hint mt">
-          أداة الإصلاح لا تحذف بيانات، فقط تضيف الأعمدة الناقصة تلقائياً لضمان عمل النظام بسلاسة.
-        </div>
+       
+     
       </div>
     </section>
   </template>

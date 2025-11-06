@@ -517,6 +517,8 @@ button{
   z-index:60;
 }
 .modal.hidden{display:none;}
+/* إخفاء عام للعناصر */
+.hidden{display:none !important;}
 
 .modal-card{
   width:min(95vw,420px);

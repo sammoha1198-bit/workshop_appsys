@@ -142,9 +142,29 @@ function bindView(view) {
 
   // Home-specific
   if (view === 'home') {
-    renderLast3();
-    if (window.__lastSearchHtml) $('#searchOutput').innerHTML = window.__lastSearchHtml;
-  }
+  // لا نُظهر البطاقات تلقائياً ولا نحمّل "آخر 3" إلا عند الطلب
+  if (window.__lastSearchHtml) $('#searchOutput').innerHTML = window.__lastSearchHtml;
+
+  // عرض بطاقة "آخر 3 محركات" عند الضغط على التايل
+  $('#tileLastEngines', mountRoot)?.addEventListener('click', () => {
+    toggleHomeCards('eng');
+    const box = $('#cardLastEngines', mountRoot);
+    // حمّل البيانات لأول مرة فقط
+    if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
+  });
+
+  // عرض بطاقة "آخر 3 مولدات" عند الضغط على التايل
+  $('#tileLastGenerators', mountRoot)?.addEventListener('click', () => {
+    toggleHomeCards('gen');
+    const box = $('#cardLastGenerators', mountRoot);
+    if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
+  });
+
+  // عرض بطاقة "حالة النظام"
+  $('#tileStatus', mountRoot)?.addEventListener('click', () => {
+    toggleHomeCards('status');
+  });
+}
 
   // Reports-specific
   if (view === 'reports') {
@@ -182,6 +202,21 @@ async function renderLast3() {
     $('#last3Engines')?.insertAdjacentHTML('afterbegin','<div class="muted">خطأ في التحميل</div>');
     $('#last3Generators')?.insertAdjacentHTML('afterbegin','<div class="muted">خطأ في التحميل</div>');
   }
+}
+// إظهار بطاقة واحدة وإخفاء الباقي في الواجهة الرئيسية
+function toggleHomeCards(which){
+  const root = mountRoot;
+  const eng = $('#cardLastEngines', root);
+  const gen = $('#cardLastGenerators', root);
+  const st  = $('#cardStatus', root);
+
+  eng?.classList.add('hidden');
+  gen?.classList.add('hidden');
+  st?.classList.add('hidden');
+
+  if (which === 'eng') eng?.classList.remove('hidden');
+  if (which === 'gen') gen?.classList.remove('hidden');
+  if (which === 'status') st?.classList.remove('hidden');
 }
 
 /* ---------- Search ---------- */
