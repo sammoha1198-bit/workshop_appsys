@@ -1,6 +1,7 @@
 # app/main.py
 from fastapi import FastAPI, Body, Depends, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+
 from fastapi.responses import StreamingResponse, JSONResponse
 from typing import Dict, Any, List, Union, Optional
 from io import BytesIO
@@ -18,11 +19,18 @@ from openpyxl.styles import PatternFill, Font, Alignment, Border, Side
 
 app = FastAPI(title="Alsami Workshop Backend", version="4.0-final")
 
-# ---------------- CORS ----------------
+
+ALLOWED_ORIGINS = [
+    "https://workshop-frontend-cmqd.onrender.com",
+    "http://localhost",
+    "http://127.0.0.1:5173",
+    "http://127.0.0.1:9000",
+]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://workshop-frontend-cmqd.onrender.com"],
-    allow_credentials=False,
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=False,   # لا نحتاج كريدنشلز هنا
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -195,6 +203,21 @@ def _on_startup():
 @app.get("/api/health")
 def health() -> Dict[str, Any]:
     return {"ok": True, "time": _now_iso()}
+
+def to_dict(obj: Any) -> Dict[str, Any]:
+    if hasattr(obj, "model_dump"):
+        return obj.model_dump()
+    if hasattr(obj, "dict"):
+        return obj.dict()
+    return dict(obj)
+
+def _safe_date(s: Optional[str]) -> Optional[datetime.date]:
+    if not s:
+        return None
+    try:
+        return datetime.date.fromisoformat(s)
+    except Exception:
+        return None
 
 # ---------------- Seed ----------------
 @app.get("/api/seed")
@@ -400,7 +423,6 @@ def save_and_search(payload: Dict[str, Any] = Body(...), session: Session = Depe
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"save-and-search error: {e}")
 
-# ---------------- Export XLSX (قديم + جديد) ----------------
 @app.post("/api/export/xlsx")
 def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(get_session)):
     """
@@ -412,10 +434,8 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
       "filename": "تقرير.xlsx"     # اختياري
     }
 
-    التعديل:
-    - تصدير كل الحركات لكل رقم في صف واحد.
-    - للمحركات: توريد، صرف، تأهيل، فحص، رفع، مخرطة، بمبات/نوزلات، كهرباء.
-    - للمولدات: توريد، صرف، فحص/رفع.
+    - للمحركات: صف واحد لكل رقم يتضمن (توريد، صرف، تأهيل، فحص، رفع، مخرطة، بمبات/نوزلات، كهرباء).
+    - للمولدات: صف واحد لكل كود يتضمن (توريد، صرف، فحص/رفع).
     """
     ensure_schema(session)
 
@@ -427,7 +447,6 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
     encoded_name = quote(original_filename)
 
     def in_range(date_str: Optional[str]) -> bool:
-        """تحقق أن التاريخ داخل المدى (إن وجد)."""
         if not (date_from or date_to):
             return True
         d = _safe_date(date_str)
@@ -439,7 +458,7 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             return False
         return True
 
-    # إعداد ملف الإكسل
+    # ===== إعداد ملف الإكسل العام =====
     wb = Workbook()
     header_fill = PatternFill("solid", fgColor="2563eb")
     alt_fill = PatternFill("solid", fgColor="f1f5f9")
@@ -482,13 +501,13 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             ws_eng.column_dimensions[c.column_letter].width = 35
 
         supplies = session.exec(select(models.EngineSupply)).all()
-        issues = session.exec(select(models.EngineIssue)).all()
-        rehabs = session.exec(select(models.EngineRehab)).all()
-        checks = session.exec(select(models.EngineCheck)).all()
-        uploads = session.exec(select(models.EngineUpload)).all()
-        lathes = session.exec(select(models.EngineLathe)).all()
-        pumps = session.exec(select(models.EnginePump)).all()
-        elecs = session.exec(select(models.EngineElectrical)).all()
+        issues   = session.exec(select(models.EngineIssue)).all()
+        rehabs   = session.exec(select(models.EngineRehab)).all()
+        checks   = session.exec(select(models.EngineCheck)).all()
+        uploads  = session.exec(select(models.EngineUpload)).all()
+        lathes   = session.exec(select(models.EngineLathe)).all()
+        pumps    = session.exec(select(models.EnginePump)).all()
+        elecs    = session.exec(select(models.EngineElectrical)).all()
 
         by_serial: Dict[str, Dict[str, str]] = {}
 
@@ -501,36 +520,44 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
             old = row.get(seg) or ""
             row[seg] = (old + " | " if old else "") + text
 
+        # توريد
         for r in supplies:
             if not in_range(r.supDate):
                 continue
             txt = f"نوع:{r.engineType or ''} موديل:{r.model or ''} موقع سابق:{r.prevSite or ''} تاريخ:{r.supDate or ''} مورد:{r.supplier or ''} {r.notes or ''}"
             add("supply", r.serial, txt, r.supDate)
 
+        # صرف
         for r in issues:
             txt = f"موقع حالي:{r.currSite or ''} مستلم:{r.receiver or ''} طالب:{r.requester or ''} تاريخ:{r.issueDate or ''} {r.notes or ''}"
             add("issue", r.serial, txt, r.issueDate)
 
+        # تأهيل
         for r in rehabs:
             txt = f"جهة:{r.rehabber or ''} نوع:{r.rehabType or ''} تاريخ:{r.rehabDate or ''} {r.notes or ''}"
             add("rehab", r.serial, txt, r.rehabDate)
 
+        # فحص
         for r in checks:
             txt = f"فاحص:{r.inspector or ''} وصف:{r.description or ''} تاريخ:{r.checkDate or ''} {r.notes or ''}"
             add("check", r.serial, txt, r.checkDate)
 
+        # رفع
         for r in uploads:
             txt = f"رفع تأهيل:{r.rehabUp or ''} رفع فحص:{r.checkUp or ''} تاريخ تأهيل:{r.rehabUpDate or ''} تاريخ فحص:{r.checkUpDate or ''} {r.notes or ''}"
             add("upload", r.serial, txt)
 
+        # مخرطة
         for r in lathes:
             txt = f"مخرطة:{r.lathe or ''} تاريخ:{r.latheDate or ''} {r.notes or ''}"
             add("lathe", r.serial, txt, r.latheDate)
 
+        # بمبات ونوزلات
         for r in pumps:
             txt = f"بمب:{r.pumpSerial or ''} تأهيل:{r.pumpRehab or ''} {r.notes or ''}"
             add("pump", r.serial, txt)
 
+        # كهرباء
         for r in elecs:
             txt = f"نوع:{r.etype or ''} سلف:{r.starter or ''} دينمو:{r.alternator or ''} تاريخ:{r.edate or ''} {r.notes or ''}"
             add("elec", r.serial, txt, r.edate)
@@ -625,11 +652,13 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
                 c.fill = alt_fill if row_idx % 2 else white_fill
             row_idx += 1
 
+    # في حال لا توجد بيانات
     if not ws_eng and not ws_gen:
         ws = wb.active
         ws.title = "فارغ"
         ws.append(["لا توجد بيانات للتصدير"])
 
+    # توقيع
     ws = ws_gen or ws_eng or wb.active
     last_row = ws.max_row + 2
     sig = ws.cell(row=last_row, column=1)
@@ -642,13 +671,16 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
     buf.seek(0)
 
     headers_resp = {
-        "Content-Disposition": f"attachment; filename={safe_filename}; filename*=UTF-8''{encoded_name}"
+        "Content-Disposition": f"attachment; filename={safe_filename}; filename*=UTF-8''{encoded_name}",
+        "Access-Control-Expose-Headers": "Content-Disposition",
     }
+
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers=headers_resp,
     )
+
 
 # ---------------- Root ----------------
 @app.get("/")
