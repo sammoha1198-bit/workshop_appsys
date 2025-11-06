@@ -240,11 +240,13 @@ async function doSearch() {
   }
 }
 
+
 function buildSearchHtml(key, data) {
   const engines = data?.engines || {};
-  const gens = data?.generators || {};
+  const gens    = data?.generators || {};
 
-  const labels = {
+  // Arabic labels for fields
+  const L = {
     // عام
     serial: 'الرقم التسلسلي',
     code: 'كود المولد',
@@ -252,6 +254,7 @@ function buildSearchHtml(key, data) {
     currSite: 'الموقع الحالي',
     notes: 'ملاحظات',
     created_at: 'تاريخ الإدخال',
+
     // محركات
     engineType: 'نوع المحرك',
     model: 'الموديل',
@@ -270,7 +273,7 @@ function buildSearchHtml(key, data) {
     checkUp: 'رفع فحص',
     rehabUpDate: 'تاريخ رفع التأهيل',
     checkUpDate: 'تاريخ رفع الفحص',
-    lathe: 'جهة المخرطة',
+    lathe: 'تفاصيل المخرطة',
     latheDate: 'تاريخ المخرطة',
     pumpSerial: 'رقم البمب',
     pumpRehab: 'تأهيل البمب',
@@ -278,71 +281,66 @@ function buildSearchHtml(key, data) {
     starter: 'السلف',
     alternator: 'الدينمو',
     edate: 'تاريخ العمل الكهربائي',
+
     // مولدات
     gType: 'السعة',
     vendor: 'الجهة المورّدة',
-    issueDate_gen: 'تاريخ الصرف',
     elecRehab: 'تأهيل كهربائي',
   };
 
-  function fmtField(k, v) {
-    if (v === null || v === undefined || v === '') return '';
-    const label = labels[k] || k;
-    return `<span class="tag"><b>${escapeHTML(label)}:</b> ${escapeHTML(v)}</span>`;
+  // format one record as plain “draft” lines
+  function plainRecord(rec, idx) {
+    const lines = Object.entries(rec)
+      .filter(([_, v]) => v !== null && v !== undefined && v !== '')
+      .map(([k, v]) => `- ${escapeHTML(L[k] || k)}: ${escapeHTML(v)}`);
+    if (!lines.length) return `<div class="plain-empty">لا توجد تفاصيل</div>`;
+    return `
+      <div class="plain-rec">
+        <div class="plain-rec-num">رقم ${idx + 1}:</div>
+        ${lines.map(l => `<div class="plain-line">${l}</div>`).join('')}
+      </div>
+    `;
   }
 
-  function recordBlock(rec) {
-    const entries = Object.entries(rec)
-      .filter(([k, v]) => v !== null && v !== undefined && v !== '')
-      .map(([k, v]) => fmtField(k, v))
-      .join('');
-    return entries
-      ? `<div class="row wrap mt-xs">${entries}</div>`
-      : '<div class="muted">لا توجد تفاصيل</div>';
-  }
-
-  function sectionCard(title, list) {
+  // section = title + list of records
+  function section(title, list) {
     if (!list || !list.length) {
       return `
-        <div class="card">
-          <div class="card-title">${title}</div>
-          <div class="muted">لا توجد سجلات</div>
+        <div class="plain-section">
+          <div class="plain-title">${title}</div>
+          <div class="plain-empty">لا توجد سجلات</div>
         </div>
       `;
     }
     return `
-      <div class="card">
-        <div class="card-title">${title}</div>
-        ${list.map(recordBlock).join('')}
+      <div class="plain-section">
+        <div class="plain-title">${title}</div>
+        ${list.map((r, i) => plainRecord(r, i)).join('')}
       </div>
     `;
   }
 
   return `
-    <div class="card">
-      <div class="row" style="justify-content:space-between;align-items:center">
-        <div>نتائج البحث عن: <span class="chip">${escapeHTML(key)}</span></div>
-        <button class="btn-light" onclick="openExport()">تصدير النتائج</button>
+    <div class="plain-header">
+      <div class="plain-key">
+        نتائج البحث عن: <span class="plain-chip">${escapeHTML(key)}</span>
       </div>
+      <button class="btn-light" onclick="openExport()">تصدير النتائج</button>
     </div>
 
-    <div class="grid-2 mt">
-      <div>
-        ${sectionCard('محركات - توريد', engines.supply)}
-        ${sectionCard('محركات - صرف', engines.issue)}
-        ${sectionCard('محركات - تأهيل', engines.rehab)}
-        ${sectionCard('محركات - فحص', engines.check)}
-        ${sectionCard('محركات - رفع (ملفات / فحوصات)', engines.upload)}
-        ${sectionCard('محركات - مخرطة', engines.lathe)}
-        ${sectionCard('محركات - بمبات ونوزلات', engines.pump)}
-        ${sectionCard('محركات - كهرباء', engines.electrical)}
-      </div>
+    <div class="plain-wrap">
+      ${section('المحركات — توريد', engines.supply)}
+      ${section('المحركات — صرف', engines.issue)}
+      ${section('المحركات — تأهيل', engines.rehab)}
+      ${section('المحركات — فحص', engines.check)}
+      ${section('المحركات — رفع', engines.upload)}
+      ${section('المحركات — مخرطة', engines.lathe)}
+      ${section('المحركات — بمبات/نوزلات', engines.pump)}
+      ${section('المحركات — كهرباء', engines.electrical)}
 
-      <div>
-        ${sectionCard('مولدات - توريد', gens.supply)}
-        ${sectionCard('مولدات - صرف', gens.issue)}
-        ${sectionCard('مولدات - فحص / رفع', gens.inspect)}
-      </div>
+      ${section('المولدات — توريد', gens.supply)}
+      ${section('المولدات — صرف', gens.issue)}
+      ${section('المولدات — فحص/رفع', gens.inspect)}
     </div>
   `;
 }
