@@ -402,24 +402,47 @@ def save_and_search(payload: Dict[str, Any] = Body(...), session: Session = Depe
 # ---------------- Export XLSX (قديم + جديد) ----------------
 @app.post("/api/export/xlsx")
 def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(get_session)):
+    """
+    body:
+    {
+      "scope": "engines"|"generators"|"both",
+      "date_from": "YYYY-MM-DD",   # اختياري
+      "date_to":   "YYYY-MM-DD",   # اختياري
+      "filename": "تقرير.xlsx"     # اختياري
+    }
+
+    التعديل:
+    - تصدير كل الحركات لكل رقم في صف واحد.
+    - للمحركات: توريد، صرف، تأهيل، فحص، رفع، مخرطة، بمبات/نوزلات، كهرباء.
+    - للمولدات: توريد، صرف، فحص/رفع.
+    """
     ensure_schema(session)
 
-    # كشف الوضع: قديم (headers+rows) أم جديد (scope/date range)
-    legacy_headers = payload.get("headers")
-    legacy_rows    = payload.get("rows")
-
+    scope = (payload.get("scope") or "both").lower()
+    date_from = _safe_date(payload.get("date_from"))
+    date_to = _safe_date(payload.get("date_to"))
     original_filename: str = payload.get("filename") or "report.xlsx"
-    safe_filename = "report.xlsx"  # ASCII fallback
+    safe_filename = "report.xlsx"
     encoded_name = quote(original_filename)
 
-    wb = Workbook()
-    ws = wb.active
-    ws.sheet_view.rightToLeft = True
+    def in_range(date_str: Optional[str]) -> bool:
+        """تحقق أن التاريخ داخل المدى (إن وجد)."""
+        if not (date_from or date_to):
+            return True
+        d = _safe_date(date_str)
+        if not d:
+            return False
+        if date_from and d < date_from:
+            return False
+        if date_to and d > date_to:
+            return False
+        return True
 
-    # نمط تصميم
-    header_fill = PatternFill("solid", fgColor="2563eb")   # أزرق
-    alt_fill    = PatternFill("solid", fgColor="f1f5f9")   # صف باهت
-    white_fill  = PatternFill("solid", fgColor="FFFFFF")
+    # إعداد ملف الإكسل
+    wb = Workbook()
+    header_fill = PatternFill("solid", fgColor="2563eb")
+    alt_fill = PatternFill("solid", fgColor="f1f5f9")
+    white_fill = PatternFill("solid", fgColor="FFFFFF")
     header_font = Font(bold=True, color="FFFFFF", name="Arial")
     normal_font = Font(name="Arial")
     align_right = Alignment(horizontal="right", vertical="center", wrap_text=True)
@@ -430,118 +453,201 @@ def export_xlsx(payload: Dict[str, Any] = Body(...), session: Session = Depends(
         bottom=Side(style="thin", color="DDDDDD"),
     )
 
-    try:
-        if legacy_headers is not None and legacy_rows is not None:
-            # ========= الوضع القديم =========
-            ws.title = payload.get("sheet") or "تقرير"
-            if legacy_headers:
-                ws.append(legacy_headers)
-                for i in range(1, len(legacy_headers)+1):
-                    c = ws.cell(row=1, column=i)
-                    c.fill = header_fill; c.font = header_font; c.alignment = align_right; c.border = thin_border
-                    ws.column_dimensions[c.column_letter].width = 25
-            r = 2
-            for row in legacy_rows:
-                if isinstance(row, dict) and legacy_headers:
-                    ordered = [row.get(h, "") for h in legacy_headers]
-                elif isinstance(row, (list, tuple)):
-                    ordered = list(row)
-                else:
-                    ordered = [str(row)]
-                ws.append(ordered)
-                for i in range(1, len(ordered)+1):
-                    c = ws.cell(row=r, column=i)
-                    c.font = normal_font; c.alignment = align_right; c.border = thin_border
-                    c.fill = alt_fill if r % 2 else white_fill
-                r += 1
+    # ===================== المحركات =====================
+    ws_eng = None
+    if scope in ("engines", "both"):
+        ws_eng = wb.active
+        ws_eng.title = "المحركات"
+        ws_eng.sheet_view.rightToLeft = True
 
-        else:
-            # ========= الوضع الجديد =========
-            scope = (payload.get("scope") or "both").lower()
-            from_date = payload.get("date_from")
-            to_date   = payload.get("date_to")
+        eng_headers = [
+            "الرقم التسلسلي",
+            "بيانات التوريد",
+            "بيانات الصرف",
+            "بيانات التأهيل",
+            "بيانات الفحص",
+            "بيانات الرفع",
+            "بيانات المخرطة",
+            "بيانات البمبات والنوزلات",
+            "بيانات الكهرباء",
+        ]
+        ws_eng.append(eng_headers)
+        for i in range(1, len(eng_headers) + 1):
+            c = ws_eng.cell(row=1, column=i)
+            c.fill = header_fill
+            c.font = header_font
+            c.alignment = align_right
+            c.border = thin_border
+            ws_eng.column_dimensions[c.column_letter].width = 35
 
-            def _d(s: Optional[str]):
-                try:
-                    return dt.date.fromisoformat(s) if s else None
-                except Exception:
-                    return None
+        supplies = session.exec(select(models.EngineSupply)).all()
+        issues = session.exec(select(models.EngineIssue)).all()
+        rehabs = session.exec(select(models.EngineRehab)).all()
+        checks = session.exec(select(models.EngineCheck)).all()
+        uploads = session.exec(select(models.EngineUpload)).all()
+        lathes = session.exec(select(models.EngineLathe)).all()
+        pumps = session.exec(select(models.EnginePump)).all()
+        elecs = session.exec(select(models.EngineElectrical)).all()
 
-            d1, d2 = _d(from_date), _d(to_date)
+        by_serial: Dict[str, Dict[str, str]] = {}
 
-            def in_range(iso_str: Optional[str]) -> bool:
-                if not (d1 or d2):
-                    return True
-                try:
-                    dd = dt.date.fromisoformat(iso_str) if iso_str else None
-                except Exception:
-                    return False
-                if not dd:
-                    return False
-                if d1 and dd < d1:
-                    return False
-                if d2 and dd > d2:
-                    return False
-                return True
+        def add(seg: str, serial: str, text: str, date_field: Optional[str] = None):
+            if not serial or not text:
+                return
+            if date_field and not in_range(date_field):
+                return
+            row = by_serial.setdefault(serial, {"serial": serial})
+            old = row.get(seg) or ""
+            row[seg] = (old + " | " if old else "") + text
 
-            if scope in ("engines", "both"):
-                ws.title = "المحركات"
-                eng_headers = ["الرقم التسلسلي","النوع","الموديل","الموقع السابق","تاريخ التوريد","المورّد","ملاحظات"]
-                ws.append(eng_headers)
-                for i in range(1, len(eng_headers)+1):
-                    c = ws.cell(row=1, column=i)
-                    c.fill = header_fill; c.font = header_font; c.alignment = align_right; c.border = thin_border
-                    ws.column_dimensions[c.column_letter].width = 25
-                r = 2
-                for e in session.exec(select(models.EngineSupply)).all():
-                    if in_range(e.supDate):
-                        row = [e.serial, e.engineType, e.model, e.prevSite, e.supDate, e.supplier, e.notes]
-                        ws.append(row)
-                        for i in range(1, len(row)+1):
-                            c = ws.cell(row=r, column=i)
-                            c.font = normal_font; c.alignment = align_right; c.border = thin_border
-                            c.fill = alt_fill if r % 2 else white_fill
-                        r += 1
+        for r in supplies:
+            if not in_range(r.supDate):
+                continue
+            txt = f"نوع:{r.engineType or ''} موديل:{r.model or ''} موقع سابق:{r.prevSite or ''} تاريخ:{r.supDate or ''} مورد:{r.supplier or ''} {r.notes or ''}"
+            add("supply", r.serial, txt, r.supDate)
 
-            if scope in ("generators", "both"):
-                sheet = wb.create_sheet("المولدات") if ws.title != "المولدات" else ws
-                sheet.sheet_view.rightToLeft = True
-                gen_headers = ["الكود","السعة","الموديل","الموقع السابق","تاريخ التوريد","الجهة","المورد","ملاحظات"]
-                sheet.append(gen_headers)
-                for i in range(1, len(gen_headers)+1):
-                    c = sheet.cell(row=1, column=i)
-                    c.fill = header_fill; c.font = header_font; c.alignment = align_right; c.border = thin_border
-                    sheet.column_dimensions[c.column_letter].width = 25
-                r = 2
-                for g in session.exec(select(models.GeneratorSupply)).all():
-                    if in_range(g.supDate):
-                        row = [g.code, g.gType, g.model, g.prevSite, g.supDate, g.supplier, g.vendor, g.notes]
-                        sheet.append(row)
-                        for i in range(1, len(row)+1):
-                            c = sheet.cell(row=r, column=i)
-                            c.font = normal_font; c.alignment = align_right; c.border = thin_border
-                            c.fill = alt_fill if r % 2 else white_fill
-                        r += 1
+        for r in issues:
+            txt = f"موقع حالي:{r.currSite or ''} مستلم:{r.receiver or ''} طالب:{r.requester or ''} تاريخ:{r.issueDate or ''} {r.notes or ''}"
+            add("issue", r.serial, txt, r.issueDate)
 
-        # توقيع
-        last = ws.max_row + 2
-        sig = ws.cell(row=last, column=1)
-        sig.value = f"تاريخ التوليد: {dt.datetime.utcnow().isoformat()}"
-        sig.alignment = align_right
-        sig.font = Font(italic=True, color="666666", name="Arial")
+        for r in rehabs:
+            txt = f"جهة:{r.rehabber or ''} نوع:{r.rehabType or ''} تاريخ:{r.rehabDate or ''} {r.notes or ''}"
+            add("rehab", r.serial, txt, r.rehabDate)
 
-        buf = BytesIO(); wb.save(buf); buf.seek(0)
-        headers_resp = {
-            "Content-Disposition": f"attachment; filename={safe_filename}; filename*=UTF-8''{encoded_name}",
-            "Access-Control-Expose-Headers": "Content-Disposition"
-        }
-        return StreamingResponse(
-            buf,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers=headers_resp,
-        )
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Export error: {e}")
+        for r in checks:
+            txt = f"فاحص:{r.inspector or ''} وصف:{r.description or ''} تاريخ:{r.checkDate or ''} {r.notes or ''}"
+            add("check", r.serial, txt, r.checkDate)
+
+        for r in uploads:
+            txt = f"رفع تأهيل:{r.rehabUp or ''} رفع فحص:{r.checkUp or ''} تاريخ تأهيل:{r.rehabUpDate or ''} تاريخ فحص:{r.checkUpDate or ''} {r.notes or ''}"
+            add("upload", r.serial, txt)
+
+        for r in lathes:
+            txt = f"مخرطة:{r.lathe or ''} تاريخ:{r.latheDate or ''} {r.notes or ''}"
+            add("lathe", r.serial, txt, r.latheDate)
+
+        for r in pumps:
+            txt = f"بمب:{r.pumpSerial or ''} تأهيل:{r.pumpRehab or ''} {r.notes or ''}"
+            add("pump", r.serial, txt)
+
+        for r in elecs:
+            txt = f"نوع:{r.etype or ''} سلف:{r.starter or ''} دينمو:{r.alternator or ''} تاريخ:{r.edate or ''} {r.notes or ''}"
+            add("elec", r.serial, txt, r.edate)
+
+        row_idx = 2
+        for serial, segs in sorted(by_serial.items()):
+            row = [
+                serial,
+                segs.get("supply", ""),
+                segs.get("issue", ""),
+                segs.get("rehab", ""),
+                segs.get("check", ""),
+                segs.get("upload", ""),
+                segs.get("lathe", ""),
+                segs.get("pump", ""),
+                segs.get("elec", ""),
+            ]
+            ws_eng.append(row)
+            for col in range(1, len(row) + 1):
+                c = ws_eng.cell(row=row_idx, column=col)
+                c.font = normal_font
+                c.alignment = align_right
+                c.border = thin_border
+                c.fill = alt_fill if row_idx % 2 else white_fill
+            row_idx += 1
+
+    # ===================== المولدات =====================
+    ws_gen = None
+    if scope in ("generators", "both"):
+        ws_gen = wb.create_sheet(title="المولدات") if ws_eng else wb.active
+        ws_gen.title = "المولدات"
+        ws_gen.sheet_view.rightToLeft = True
+
+        gen_headers = [
+            "كود المولد",
+            "بيانات التوريد",
+            "بيانات الصرف",
+            "بيانات الفحص / الرفع",
+        ]
+        ws_gen.append(gen_headers)
+        for i in range(1, len(gen_headers) + 1):
+            c = ws_gen.cell(row=1, column=i)
+            c.fill = header_fill
+            c.font = header_font
+            c.alignment = align_right
+            c.border = thin_border
+            ws_gen.column_dimensions[c.column_letter].width = 35
+
+        sup = session.exec(select(models.GeneratorSupply)).all()
+        iss = session.exec(select(models.GeneratorIssue)).all()
+        ins = session.exec(select(models.GeneratorInspect)).all()
+
+        by_code: Dict[str, Dict[str, str]] = {}
+
+        def addg(seg: str, code: str, text: str, date_field: Optional[str] = None):
+            if not code or not text:
+                return
+            if date_field and not in_range(date_field):
+                return
+            row = by_code.setdefault(code, {"code": code})
+            old = row.get(seg) or ""
+            row[seg] = (old + " | " if old else "") + text
+
+        for r in sup:
+            if not in_range(r.supDate):
+                continue
+            txt = f"سعة:{r.gType or ''} موديل:{r.model or ''} موقع سابق:{r.prevSite or ''} تاريخ:{r.supDate or ''} جهة:{r.supplier or ''} مورد:{r.vendor or ''} {r.notes or ''}"
+            addg("supply", r.code, txt, r.supDate)
+
+        for r in iss:
+            txt = f"تاريخ:{r.issueDate or ''} مستلم:{r.receiver or ''} طالب:{r.requester or ''} موقع حالي:{r.currSite or ''} {r.notes or ''}"
+            addg("issue", r.code, txt, r.issueDate)
+
+        for r in ins:
+            txt = f"مفتش:{r.inspector or ''} تأهيل كهربائي:{r.elecRehab or ''} تاريخ التأهيل:{r.rehabDate or ''} رفع تأهيل:{r.rehabUp or ''} رفع فحص:{r.checkUp or ''} {r.notes or ''}"
+            addg("inspect", r.code, txt, r.rehabDate)
+
+        row_idx = 2
+        for code, segs in sorted(by_code.items()):
+            row = [
+                code,
+                segs.get("supply", ""),
+                segs.get("issue", ""),
+                segs.get("inspect", ""),
+            ]
+            ws_gen.append(row)
+            for col in range(1, len(row) + 1):
+                c = ws_gen.cell(row=row_idx, column=col)
+                c.font = normal_font
+                c.alignment = align_right
+                c.border = thin_border
+                c.fill = alt_fill if row_idx % 2 else white_fill
+            row_idx += 1
+
+    if not ws_eng and not ws_gen:
+        ws = wb.active
+        ws.title = "فارغ"
+        ws.append(["لا توجد بيانات للتصدير"])
+
+    ws = ws_gen or ws_eng or wb.active
+    last_row = ws.max_row + 2
+    sig = ws.cell(row=last_row, column=1)
+    sig.value = f"تاريخ التوليد: {datetime.datetime.utcnow().isoformat()}"
+    sig.alignment = align_right
+    sig.font = Font(italic=True, color="666666", name="Arial")
+
+    buf = BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    headers_resp = {
+        "Content-Disposition": f"attachment; filename={safe_filename}; filename*=UTF-8''{encoded_name}"
+    }
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers=headers_resp,
+    )
 
 # ---------------- Root ----------------
 @app.get("/")
