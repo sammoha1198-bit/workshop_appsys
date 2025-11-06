@@ -3,94 +3,103 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no" />
-  <title>السامي | نظام إدارة الورشة</title>
+  <title>السامي لإدارة الورشة</title>
 
-  <!-- هوية بصرية: خط عربي واضح -->
+  <!-- هوية خط موحدة -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
 
   <link rel="stylesheet" href="styles.css" />
+  <meta name="theme-color" content="#0b2a45">
 </head>
 <body>
-  <!-- رأس ثابت: شعار + بحث + حالة -->
+
+  <!-- شريط علوي (ثابت - هوية + حالة النظام + مستخدم) -->
   <header class="topbar">
-    <div class="brand">
-      <div class="brand-mark">⚙️</div>
+    <div class="topbar-brand">
+      <div class="brand-logo-mark">
+        <!-- يمكن استبدالها بشعار الشركة الفعلي -->
+        <span class="brand-icon-gear"></span>
+      </div>
       <div class="brand-text">
         <div class="brand-title">السامي لإدارة الورشة</div>
-        <div class="brand-sub">نظام صيانة المحركات والمولدات</div>
+        <div class="brand-sub">نظام محركات ومولدات للشركات</div>
       </div>
     </div>
 
-    <div class="top-actions">
-      <div class="status-pill">
+    <div class="topbar-status">
+      <div class="status-pill" id="systemStatusPill">
         <span id="onlineDot" class="dot online"></span>
-        <span id="onlineText" class="status-text">متصل</span>
+        <span id="onlineText" class="status-text">متصل بالخادم</span>
       </div>
-      <button id="btnSettings" class="icon-btn" title="إعدادات الخادم">⚙️</button>
-      <button id="btnBell" class="icon-btn" title="إشعارات">
-        🔔 <span id="bellCount" class="badge">0</span>
+      <div class="topbar-meta">
+        <span class="meta-label">آخر مزامنة:</span>
+        <span id="lastSync" class="meta-value">—</span>
+      </div>
+      <button id="btnSettings" class="icon-btn" title="إعدادات الاتصال">
+        <span class="icon icon-settings"></span>
       </button>
-      <button id="btnLogout" class="icon-btn danger" title="خروج">⟵</button>
-      <button id="menuToggle" class="icon-btn menu-btn" aria-label="القائمة">
-        ☰
+      <button id="btnBell" class="icon-btn" title="الإشعارات">
+        <span class="icon icon-bell"></span>
+        <span id="bellCount" class="badge">0</span>
+      </button>
+      <button id="btnLogout" class="pill-btn pill-danger" title="تسجيل الخروج">
+        <span class="icon icon-logout"></span>
+        <span>خروج</span>
       </button>
     </div>
   </header>
 
-  <!-- حاوية عامة: Mobile First -->
-  <div class="shell">
-    <!-- قائمة جانبية (تظهر على الشاشات الواسعة أو من زر ☰) -->
-    <aside class="sidebar" id="sidebar">
-      <nav class="nav">
-        <div class="nav-section">القائمة الرئيسية</div>
-        <button data-view="home" class="nav-item active">الواجهة الرئيسية</button>
+  <!-- منطقة التطبيق -->
+  <main id="app" class="app">
+    <!-- سيتم حقن القوالب هنا -->
+    <section id="viewRoot" class="view-root"></section>
+  </main>
 
-        <div class="nav-section">الوحدات</div>
-        <button data-view="engines" class="nav-item">لوحة المحركات</button>
-        <button data-view="gen-home" class="nav-item">لوحة المولدات</button>
-
-        <div class="nav-section">التقارير</div>
-        <button data-view="reports" class="nav-item">التقارير والتصدير</button>
-      </nav>
-    </aside>
-
-    <!-- منطقة المحتوى -->
-    <main class="content">
-      <!-- شريط أدوات فوق المحتوى (بحث سريع + تصدير) -->
-      <section class="toolbar">
-        <div class="toolbar-search">
-          <input id="searchInput" class="input search-input"
-                 placeholder="بحث سريع: رقم تسلسلي لمحرك أو كود مولد..." />
-          <button id="btnSearch" class="btn-primary btn-search">بحث</button>
-        </div>
-        <button id="btnQuickExport" class="btn-light btn-quick-export">تصدير سريع</button>
-      </section>
-
-      <!-- هنا تعرض القوالب -->
-      <section id="viewRoot"></section>
-    </main>
-  </div>
+  <!-- شريط تنقل سفلي (Mobile-First) -->
+  <nav class="bottom-nav">
+    <button class="bottom-nav-item active" data-view="home">
+      <span class="icon icon-home"></span>
+      <span>الرئيسية</span>
+    </button>
+    <button class="bottom-nav-item" data-view="search">
+      <span class="icon icon-search"></span>
+      <span>بحث</span>
+    </button>
+    <button class="bottom-nav-item" data-view="engines">
+      <span class="icon icon-engine"></span>
+      <span>المحركات</span>
+    </button>
+    <button class="bottom-nav-item" data-view="gen-home">
+      <span class="icon icon-generator"></span>
+      <span>المولدات</span>
+    </button>
+    <button class="bottom-nav-item" data-view="reports">
+      <span class="icon icon-report"></span>
+      <span>التقارير</span>
+    </button>
+  </nav>
 
   <!-- نافذة إعدادات API -->
   <div id="settingsModal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>إعدادات الخادم</h3>
-        <button id="closeSettings" class="modal-close">✕</button>
+        <h3>إعدادات الاتصال بالخادم</h3>
+        <button id="closeSettings" class="icon-btn">
+          <span class="icon icon-close"></span>
+        </button>
       </div>
       <div class="modal-body">
         <div class="field">
-          <label>رابط واجهة البرمجة (API Base)</label>
-          <input id="apiBaseInput" class="input"
-                 placeholder="مثال: https://workshop-appsys.onrender.com/api" />
-          <div class="hint">اضبط هذا الحقل مرة واحدة ليشير إلى سيرفر الـ Backend.</div>
+          <label>رابط API</label>
+          <input id="apiBaseInput" class="input" placeholder="مثال: https://workshop-appsys.onrender.com/api" />
+          <div class="hint">استخدم الرابط الرسمي للبيئة الإنتاجية، أو رابط محلي عند الاختبار الداخلي.</div>
         </div>
       </div>
       <div class="modal-footer">
-        <button id="saveApiBase" class="btn-primary flex-grow">حفظ</button>
-        <button id="cancelSettings" class="btn-light">إلغاء</button>
+        <button id="saveApiBase" class="btn primary">حفظ</button>
+        <button id="cancelSettings" class="btn ghost">إلغاء</button>
       </div>
     </div>
   </div>
@@ -99,24 +108,26 @@
   <div id="exportModal" class="modal hidden">
     <div class="modal-card">
       <div class="modal-header">
-        <h3>تصدير تقرير Excel</h3>
-        <button id="closeExport" class="modal-close">✕</button>
+        <h3>تصدير إلى Excel</h3>
+        <button id="closeExport" class="icon-btn">
+          <span class="icon icon-close"></span>
+        </button>
       </div>
       <div class="modal-body">
         <div class="field">
           <label>نوع البيانات</label>
-          <div class="chips-row">
+          <div class="chip-row">
             <label class="chip">
               <input type="radio" name="exportType" value="engines" checked>
-              المحركات
+              <span>المحركات</span>
             </label>
             <label class="chip">
               <input type="radio" name="exportType" value="generators">
-              المولدات
+              <span>المولدات</span>
             </label>
             <label class="chip">
               <input type="radio" name="exportType" value="both">
-              الكل
+              <span>الكل</span>
             </label>
           </div>
         </div>
@@ -130,395 +141,526 @@
             <input id="toDate" type="date" class="input" />
           </div>
         </div>
-        <div class="hint">اترك التواريخ فارغة لتصدير كامل البيانات.</div>
+        <div class="hint">اترك التواريخ فارغة لتصدير جميع السجلات المصرح بها.</div>
       </div>
       <div class="modal-footer">
-        <button id="doExport" class="btn-primary flex-grow">تصدير</button>
-        <button id="cancelExport" class="btn-light">إلغاء</button>
+        <button id="doExport" class="btn primary">تصدير</button>
+        <button id="cancelExport" class="btn ghost">إلغاء</button>
       </div>
     </div>
   </div>
 
-  <!-- ================= القوالب (Templates) ================= -->
+  <!-- ==================== القوالب ==================== -->
 
-  <!-- الواجهة الرئيسية: تايلز رئيسية + آخر 3 + الحالة + نتائج البحث -->
+  <!-- الرئيسية: لوحة تحكم تنفيذية بدون تكرار -->
   <template id="tpl-home">
-    <section class="home">
-      <!-- تايلز رئيسية (7 وظائف أساسية) -->
-      <div class="card home-grid">
-        <div class="card-header">
-          <h2 class="card-title">لوحة التحكم الرئيسية</h2>
-          <p class="card-sub">وصول سريع لكل ما يحتاجه موظف الورشة في عمله اليومي.</p>
+    <section class="home-view">
+
+      <!-- كرت حالة النظام -->
+      <div class="card status-card">
+        <div class="status-card-header">
+          <div>
+            <div class="status-label">حالة النظام</div>
+            <div class="status-summary">
+              <span id="srvStatus" class="tag ok">النظام يعمل بشكل طبيعي</span>
+            </div>
+          </div>
+          <div class="status-meta">
+            <div>إصدار الواجهة: <span class="tag">v4.0</span></div>
+            <div>مطور النظام: <span class="tag">ALSAMI</span></div>
+          </div>
         </div>
-        <div class="home-tiles">
-          <!-- البحث: يوجّه لنفس الصفحة مع التركيز على خانة البحث -->
-          <button class="tile tile-blue" data-go="home">
-            <span class="icon">🔍</span>
-            <span class="title">البحث</span>
-            <span class="subtitle">ابحث مباشرة عن أي محرك أو مولد.</span>
-          </button>
-
-          <!-- لوحة المحركات -->
-          <button class="tile tile-teal" data-view="engines">
-            <span class="icon">🧰</span>
-            <span class="title">لوحة المحركات</span>
-            <span class="subtitle">توريد، صرف، تأهيل، فحص، رفع، مخرطة، بمبات وكهرباء.</span>
-          </button>
-
-          <!-- لوحة المولدات -->
-          <button class="tile tile-purple" data-view="gen-home">
-            <span class="icon">🔌</span>
-            <span class="title">لوحة المولدات</span>
-            <span class="subtitle">إدارة كاملة لحركات المولدات.</span>
-          </button>
-
-          <!-- آخر ثلاث محركات -->
-          <button class="tile tile-amber" data-go="home">
-            <span class="icon">📦</span>
-            <span class="title">آخر 3 محركات</span>
-            <span class="subtitle">عرض أحدث عمليات المحركات.</span>
-          </button>
-
-          <!-- آخر ثلاث مولدات -->
-          <button class="tile tile-amber" data-go="home">
-            <span class="icon">⚡</span>
-            <span class="title">آخر 3 مولدات</span>
-            <span class="subtitle">عرض أحدث عمليات المولدات.</span>
-          </button>
-
-          <!-- التصدير -->
-          <button class="tile tile-indigo" data-view="reports">
-            <span class="icon">📊</span>
-            <span class="title">التصدير</span>
-            <span class="subtitle">تقرير Excel رسمي للقيادة.</span>
-          </button>
-
-          <!-- الحالة -->
-          <button class="tile tile-green" data-go="home">
-            <span class="icon">📈</span>
-            <span class="title">حالة النظام</span>
-            <span class="subtitle">حالة الخادم والاتصال والإصدار.</span>
-          </button>
+        <div class="status-indicators">
+          <div class="indicator">
+            <span class="indicator-label">إجمالي المحركات</span>
+            <span id="totalEngines" class="indicator-value">—</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">إجمالي المولدات</span>
+            <span id="totalGenerators" class="indicator-value">—</span>
+          </div>
+          <div class="indicator">
+            <span class="indicator-label">تنبيهات حرجة</span>
+            <span id="criticalAlerts" class="indicator-value critical">0</span>
+          </div>
         </div>
       </div>
 
-      <!-- كروت معلومات سريعة -->
-      <div class="status-grid">
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">آخر 3 محركات</span>
-            <span class="card-icon">🧰</span>
-          </div>
-          <div id="last3Engines" class="mt"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">آخر 3 مولدات</span>
-            <span class="card-icon">🔌</span>
-          </div>
-          <div id="last3Generators" class="mt"></div>
-        </div>
-
-        <div class="card">
-          <div class="card-title-row">
-            <span class="card-title">حالة النظام</span>
-            <span class="card-icon">📊</span>
-          </div>
-          <ul class="status-list">
-            <li>اتصال الخادم: <span id="srvStatus" class="tag ok">جيد</span></li>
-            <li>إصدار الواجهة: <span class="tag">v4.0</span></li>
-            <li>المطور: <span class="tag">ALSAMI</span></li>
-          </ul>
-        </div>
-      </div>
-
-      <!-- نتائج البحث -->
-      <div class="card" id="searchCard">
+      <!-- كرت بحث سريع (مباشر وواضح) -->
+      <div class="card search-card">
         <div class="card-title-row">
-          <span class="card-title">نتائج البحث</span>
-          <span class="card-icon">🔎</span>
+          <h3>بحث سريع</h3>
+          <span class="card-sub">بحث برقم تسلسلي، كود، أو موقع</span>
         </div>
-        <div id="searchOutput" class="mt"></div>
+        <div class="search-inline">
+          <input id="searchInput"
+                 class="input main-search"
+                 placeholder="اكتب هنا: رقم تسلسلي محرك، كود مولد، أو كلمة مفتاحية..." />
+          <button id="btnSearch" class="btn primary">
+            <span class="icon icon-search"></span>
+            <span>بحث</span>
+          </button>
+        </div>
+        <div class="search-filters">
+          <button class="chip small" data-filter="all">الكل</button>
+          <button class="chip small" data-filter="engine">محركات</button>
+          <button class="chip small" data-filter="generator">مولدات</button>
+          <button class="chip small" data-filter="today">عمليات اليوم</button>
+        </div>
+      </div>
+
+      <!-- شبكة الإجراءات الرئيسية (بدون تكرار غير ضروري) -->
+      <div class="tile-grid home-tiles">
+        <button class="tile" data-view="engines">
+          <span class="icon icon-engine tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">لوحة المحركات</div>
+            <div class="tile-sub">إضافة، صرف، تأهيل، وفحص المحركات</div>
+          </div>
+        </button>
+
+        <button class="tile" data-view="gen-home">
+          <span class="icon icon-generator tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">لوحة المولدات</div>
+            <div class="tile-sub">إدارة توريد وصرف وفحص المولدات</div>
+          </div>
+        </button>
+
+        <button class="tile" data-view="reports">
+          <span class="icon icon-report tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">التقارير والتصدير</div>
+            <div class="tile-sub">تصدير تقارير Excel رسمية</div>
+          </div>
+        </button>
+
+        <button class="tile" data-action="open-latest">
+          <span class="icon icon-clock tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">آخر العمليات</div>
+            <div class="tile-sub">أحدث 3 محركات و 3 مولدات تم التعامل معها</div>
+          </div>
+        </button>
+
+        <button class="tile" data-action="open-status">
+          <span class="icon icon-health tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">مؤشرات الحالة</div>
+            <div class="tile-sub">عرض أداء النظام وحالة الاتصال</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- كرت آخر العمليات (بدون تكرار كبلاطة منفصلة) -->
+      <div class="card latest-card">
+        <div class="card-title-row">
+          <h3>آخر العمليات</h3>
+          <span class="card-sub">نظرة سريعة على آخر 3 محركات و3 مولدات</span>
+        </div>
+        <div class="latest-grid">
+          <div class="latest-column">
+            <div class="latest-label">آخر 3 محركات</div>
+            <div id="last3Engines" class="metric-list"></div>
+          </div>
+          <div class="latest-column">
+            <div class="latest-label">آخر 3 مولدات</div>
+            <div id="last3Generators" class="metric-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- نتائج البحث (تظهر محتوى حقيقي بعد البحث) -->
+      <div class="card">
+        <div class="card-title-row">
+          <h3>نتائج البحث</h3>
+          <span class="card-sub">سيتم عرض النتائج هنا بشكل منظم</span>
+        </div>
+        <div id="searchOutput" class="search-results empty-state">
+          <p>ابدأ بالبحث لعرض السجلات المطابقة.</p>
+        </div>
+      </div>
+
+    </section>
+  </template>
+
+  <!-- شاشة البحث المنفصلة (عند اختيارها من شريط التنقل) -->
+  <template id="tpl-search">
+    <section class="search-view">
+      <div class="view-head">
+        <h2>بحث متقدم</h2>
+      </div>
+      <div class="card search-card">
+        <div class="search-inline">
+          <input id="searchInput"
+                 class="input main-search"
+                 placeholder="بحث برقم، كود، موقع، أو حالة..." />
+          <button id="btnSearch" class="btn primary">
+            <span class="icon icon-search"></span>
+            <span>بحث</span>
+          </button>
+        </div>
+        <div class="search-filters">
+          <button class="chip small" data-filter="all">الكل</button>
+          <button class="chip small" data-filter="engine">محركات</button>
+          <button class="chip small" data-filter="generator">مولدات</button>
+          <button class="chip small" data-filter="active">نشط</button>
+          <button class="chip small" data-filter="under_maintenance">تحت الصيانة</button>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title-row">
+          <h3>نتائج البحث</h3>
+        </div>
+        <div id="searchOutput" class="search-results empty-state">
+          <p>لا توجد نتائج بعد. عدّل معايير البحث أو أدخل قيمة جديدة.</p>
+        </div>
       </div>
     </section>
   </template>
 
-  <!-- لوحة المحركات: مجرد مدخل لباقي النماذج -->
+  <!-- لوحة المحركات -->
   <template id="tpl-engines">
-    <section class="view">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>الرجوع للرئيسية</button>
         <h2>لوحة المحركات</h2>
+        <p class="view-sub">إدارة دورة حياة المحركات بالكامل.</p>
       </div>
-      <p class="view-desc">
-        اختر العملية المطلوبة على المحرك. تم تقسيم العمليات لبطاقات واضحة لتسريع إدخال البيانات وتقليل الأخطاء.
-      </p>
-      <div class="tiles-wrap">
-        <button class="tile tile-teal" data-view="eng-supply">
-          <span class="icon">➕</span>
-          <span class="title">توريد محرك</span>
-          <span class="subtitle">تسجيل محرك جديد في المخزون.</span>
+      <div class="tile-grid">
+        <button class="tile" data-view="eng-supply">
+          <span class="icon icon-add tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">توريد محرك</div>
+            <div class="tile-sub">تسجيل محرك جديد داخل النظام</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-issue">
-          <span class="icon">📤</span>
-          <span class="title">صرف محرك</span>
-          <span class="subtitle">توجيه محرك لموقع أو جهة.</span>
+        <button class="tile" data-view="eng-issue">
+          <span class="icon icon-exit tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">صرف محرك</div>
+            <div class="tile-sub">تحويل محرك لموقع أو جهة</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-rehab">
-          <span class="icon">🛠️</span>
-          <span class="title">تأهيل محرك</span>
-          <span class="subtitle">تسجيل أعمال الإصلاح والتأهيل.</span>
+        <button class="tile" data-view="eng-rehab">
+          <span class="icon icon-rehab tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">تأهيل محرك</div>
+            <div class="tile-sub">تسجيل أعمال التأهيل والصيانة</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-check">
-          <span class="icon">📋</span>
-          <span class="title">فحص محرك</span>
-          <span class="subtitle">نتائج الفحوصات الفنية.</span>
+        <button class="tile" data-view="eng-check">
+          <span class="icon icon-check tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">فحص محرك</div>
+            <div class="tile-sub">نتائج الفحوصات الفنية</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-upload">
-          <span class="icon">⬆️</span>
-          <span class="title">رفع مؤهل/فحص</span>
-          <span class="subtitle">توثيق استلام تقارير التأهيل.</span>
+        <button class="tile" data-view="eng-upload">
+          <span class="icon icon-upload tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">رفع مؤهل/فحص</div>
+            <div class="tile-sub">إرفاق مستندات الاعتماد</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-lathe">
-          <span class="icon">⚙️</span>
-          <span class="title">مخرطة</span>
-          <span class="subtitle">عمليات المخرطة على الأجزاء.</span>
+        <button class="tile" data-view="eng-lathe">
+          <span class="icon icon-lathe tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">مخرطة</div>
+            <div class="tile-sub">عمليات الخراطة الخاصة بالمحرك</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-pump">
-          <span class="icon">💧</span>
-          <span class="title">بمبات ونوزلات</span>
-          <span class="subtitle">إصلاح أو استبدال وحدات الحقن.</span>
+        <button class="tile" data-view="eng-pump">
+          <span class="icon icon-pump tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">بمبات ونوزلات</div>
+            <div class="tile-sub">تتبع البمبات والنوزلات</div>
+          </div>
         </button>
-        <button class="tile tile-teal" data-view="eng-elec">
-          <span class="icon">⚡</span>
-          <span class="title">كهرباء</span>
-          <span class="subtitle">السلف، الدينمو، الأعمال الكهربائية.</span>
+        <button class="tile" data-view="eng-elec">
+          <span class="icon icon-electric tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">قسم الكهرباء</div>
+            <div class="tile-sub">أعمال الكهرباء المرتبطة بالمحرك</div>
+          </div>
         </button>
       </div>
     </section>
   </template>
 
-  <!-- نماذج المحركات (نفس الآلية القديمة مع تحسين بسيط في الشكل) -->
+  <!-- نماذج المحركات (نفس المنطق، تصميم أنظف) -->
   <template id="tpl-eng-supply">
-    <section class="view">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
+        <button class="btn back" data-return>
+          <span class="icon icon-back"></span>
+          <span>رجوع</span>
+        </button>
         <h2>توريد محرك</h2>
       </div>
       <form class="card form" data-store="eng_supply">
-        <div class="grid-2">
-          <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
-          <div class="field"><label>نوع المحرك</label><input name="engineType" class="input" placeholder="Deutz / Perkins / ..."></div>
-          <div class="field"><label>الموديل</label><input name="model" class="input" placeholder="F4L912 / 404D-22 ..."></div>
-          <div class="field"><label>الموقع السابق</label><input name="prevSite" class="input"></div>
-          <div class="field"><label>تاريخ التوريد</label><input name="supDate" type="date" class="input"></div>
-          <div class="field"><label>المورّد</label><input name="supplier" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input" rows="2"></textarea></div>
+        <div class="grid-3">
+          <div class="field">
+            <label>الرقم التسلسلي *</label>
+            <input name="serial" class="input" required>
+          </div>
+          <div class="field">
+            <label>نوع المحرك</label>
+            <input name="engineType" class="input">
+          </div>
+          <div class="field">
+            <label>الموديل</label>
+            <input name="model" class="input">
+          </div>
+          <div class="field">
+            <label>الموقع السابق</label>
+            <input name="prevSite" class="input">
+          </div>
+          <div class="field">
+            <label>تاريخ التوريد</label>
+            <input name="supDate" type="date" class="input">
+          </div>
+          <div class="field">
+            <label>المورد</label>
+            <input name="supplier" class="input">
+          </div>
+          <div class="field grid-full">
+            <label>ملاحظات</label>
+            <textarea name="notes" rows="2" class="input"></textarea>
+          </div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-issue">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>صرف محرك</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>صرف محرك</h2>
+      </div>
       <form class="card form" data-store="eng_issue">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
           <div class="field"><label>الموقع الحالي</label><input name="currSite" class="input"></div>
           <div class="field"><label>المستلم</label><input name="receiver" class="input"></div>
           <div class="field"><label>الطالب</label><input name="requester" class="input"></div>
           <div class="field"><label>تاريخ الصرف</label><input name="issueDate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-rehab">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>تأهيل محرك</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>تأهيل محرك</h2>
+      </div>
       <form class="card form" data-store="eng_rehab">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
           <div class="field"><label>الجهة المؤهلة</label><input name="rehabber" class="input"></div>
           <div class="field"><label>نوع التأهيل</label><input name="rehabType" class="input"></div>
           <div class="field"><label>تاريخ التأهيل</label><input name="rehabDate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-check">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>فحص محرك</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>فحص محرك</h2>
+      </div>
       <form class="card form" data-store="eng_check">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
+          <div class="field grid-full"><label>وصف الفحص</label><textarea name="desc" rows="2" class="input"></textarea></div>
           <div class="field"><label>الفاحص</label><input name="inspector" class="input"></div>
-          <div class="field grid-full"><label>وصف الفحص</label><textarea name="desc" class="input" rows="2"></textarea></div>
           <div class="field"><label>تاريخ الفحص</label><input name="checkDate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-upload">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>رفع مؤهل/فحص</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>رفع مؤهل/فحص</h2>
+      </div>
       <form class="card form" data-store="eng_upload">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
-          <div class="field"><label>رفع المؤهل</label><input name="rehabUp" class="input" placeholder="نعم / لا"></div>
-          <div class="field"><label>رفع الفحص</label><input name="checkUp" class="input" placeholder="نعم / لا"></div>
+          <div class="field"><label>رابط/ملف المؤهل</label><input name="rehabUp" class="input"></div>
+          <div class="field"><label>رابط/ملف الفحص</label><input name="checkUp" class="input"></div>
           <div class="field"><label>تاريخ رفع المؤهل</label><input name="rehabUpDate" type="date" class="input"></div>
           <div class="field"><label>تاريخ رفع الفحص</label><input name="checkUpDate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
-        </div>
-      </form>
-    </section>
-  </template>
-
-  <template id="tpl-eng-lathe">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>مخرطة</h2></div>
-      <form class="card form" data-store="eng_lathe">
-        <div class="grid-2">
-          <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
-          <div class="field grid-full"><label>تفاصيل المخرطة</label><textarea name="lathe" class="input"></textarea></div>
-          <div class="field"><label>تاريخ المخرطة</label><input name="latheDate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
-        </div>
-        <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-pump">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>بمبات ونوزلات</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>بمبات ونوزلات</h2>
+      </div>
       <form class="card form" data-store="eng_pump">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
           <div class="field"><label>رقم البمب</label><input name="pumpSerial" class="input"></div>
-          <div class="field grid-full"><label>تأهيل البمب</label><textarea name="pumpRehab" class="input"></textarea></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>تفاصيل التأهيل</label><textarea name="pumpRehab" rows="2" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="tpl-eng-elec">
-    <section class="view">
-      <div class="view-head"><button class="btn-back" data-return>رجوع</button><h2>قسم الكهرباء</h2></div>
+    <section class="panel">
+      <div class="view-head">
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>قسم الكهرباء</h2>
+      </div>
       <form class="card form" data-store="eng_electrical">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الرقم التسلسلي *</label><input name="serial" class="input" required></div>
-          <div class="field"><label>نوع العمل</label><input name="etype" class="input" placeholder="كهرباء كاملة / ..."></div>
-          <div class="field"><label>سلف</label><input name="starter" class="input" placeholder="نعم / لا"></div>
-          <div class="field"><label>دينمو</label><input name="alternator" class="input" placeholder="نعم / لا"></div>
+          <div class="field"><label>نوع العمل</label><input name="etype" class="input"></div>
+          <div class="field"><label>سلف</label><input name="starter" class="input"></div>
+          <div class="field"><label>دينمو</label><input name="alternator" class="input"></div>
           <div class="field"><label>التاريخ</label><input name="edate" type="date" class="input"></div>
-          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" class="input"></textarea></div>
+          <div class="field grid-full"><label>ملاحظات</label><textarea name="notes" rows="2" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
-          <button type="button" class="btn-light" data-sync>مزامنة ↻</button>
+          <button type="submit" class="btn primary">حفظ</button>
+          <button type="button" class="btn ghost" data-sync>مزامنة</button>
         </div>
       </form>
     </section>
   </template>
 
-  <!-- لوحة المولدات (Hub) -->
-  <template id="gen-home-tpl">
-    <section class="view">
+  <!-- التقارير -->
+  <template id="tpl-reports">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
-        <h2>لوحة المولدات</h2>
+        <h2>التقارير والتصدير</h2>
+        <p class="view-sub">توليد ملفات رسمية للمراجعة والتوثيق.</p>
       </div>
-      <p class="view-desc">إدارة دورة حياة المولد من التوريد حتى الفحص.</p>
-      <div class="tiles-wrap">
-        <button class="tile tile-purple" data-go="gen-supply">
-          <span class="icon">➕</span>
-          <span class="title">توريد مولد</span>
-          <span class="subtitle">تسجيل مولد جديد مع بياناته الكاملة.</span>
+      <div class="card">
+        <div class="row gap">
+          <button id="openExport" class="btn primary">
+            <span class="icon icon-download"></span>
+            <span>فتح نافذة التصدير</span>
+          </button>
+          <button id="runRepair" class="btn ghost">
+            <span class="icon icon-fix"></span>
+            <span>إصلاح هيكل البيانات (بدون حذف)</span>
+          </button>
+        </div>
+        <div class="hint mt">
+          هذه العملية تتحقق من الأعمدة والحقول وتضيف الناقص فقط لضمان توافق التقارير مع بنية النظام.
+        </div>
+      </div>
+    </section>
+  </template>
+
+  <!-- لوحة المولدات -->
+  <template id="gen-home-tpl">
+    <section class="panel">
+      <div class="view-head">
+        <h2>لوحة المولدات</h2>
+        <p class="view-sub">إدارة بيانات المولدات من التوريد حتى الفحص.</p>
+      </div>
+      <div class="tile-grid">
+        <button class="tile" data-view="gen-supply">
+          <span class="icon icon-add tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">توريد مولد</div>
+            <div class="tile-sub">تسجيل مولد جديد</div>
+          </div>
         </button>
-        <button class="tile tile-purple" data-go="gen-issue">
-          <span class="icon">📤</span>
-          <span class="title">صرف مولد</span>
-          <span class="subtitle">توجيه مولد لموقع وتشغيل.</span>
+        <button class="tile" data-view="gen-issue">
+          <span class="icon icon-exit tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">صرف مولد</div>
+            <div class="tile-sub">تحريك المولد لموقع أو جهة</div>
+          </div>
         </button>
-        <button class="tile tile-purple" data-go="gen-inspect">
-          <span class="icon">📝</span>
-          <span class="title">فحص / رفع مولد</span>
-          <span class="subtitle">توثيق حالة المولد بعد الفحص.</span>
+        <button class="tile" data-view="gen-inspect">
+          <span class="icon icon-check tile-icon"></span>
+          <div class="tile-text">
+            <div class="tile-title">فحص/رفع مولد</div>
+            <div class="tile-sub">تحديث نتائج الفحص والوثائق</div>
+          </div>
         </button>
       </div>
     </section>
   </template>
 
-  <!-- نماذج المولدات (كما كانت مع تحسين شكل) -->
+  <!-- نماذج المولدات (كما في منطقك السابق) -->
   <template id="gen-supply-tpl">
-    <section class="view">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
         <h2>توريد مولد</h2>
       </div>
       <form id="gen-supply-form" class="card form">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الكود *</label><input id="gen_code" required class="input" /></div>
-          <div class="field"><label>السعة</label><input id="gen_gType" class="input" placeholder="30kVA" /></div>
+          <div class="field"><label>السعة</label><input id="gen_gType" class="input" /></div>
           <div class="field"><label>الموديل</label><input id="gen_model" class="input" /></div>
           <div class="field"><label>الموقع السابق</label><input id="gen_prevSite" class="input" /></div>
           <div class="field"><label>تاريخ التوريد</label><input id="gen_supDate" type="date" class="input" /></div>
-          <div class="field"><label>الجهة</label><input id="gen_supplier" class="input" placeholder="Yemen Mobile" /></div>
-          <div class="field"><label>المورّد</label><input id="gen_vendor" class="input" placeholder="PowerMax ..." /></div>
+          <div class="field"><label>الجهة</label><input id="gen_supplier" class="input" /></div>
+          <div class="field"><label>المورد</label><input id="gen_vendor" class="input" /></div>
           <div class="field grid-full"><label>ملاحظات</label><textarea id="gen_notes" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
+          <button type="submit" class="btn primary">حفظ</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="gen-issue-tpl">
-    <section class="view">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
         <h2>صرف مولد</h2>
       </div>
       <form id="gen-issue-form" class="card form">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الكود *</label><input id="gi_code" required class="input" /></div>
           <div class="field"><label>تاريخ الصرف</label><input id="gi_issueDate" type="date" class="input" /></div>
           <div class="field"><label>المستلم</label><input id="gi_receiver" class="input" /></div>
@@ -527,58 +669,35 @@
           <div class="field grid-full"><label>ملاحظات</label><textarea id="gi_notes" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
+          <button type="submit" class="btn primary">حفظ</button>
         </div>
       </form>
     </section>
   </template>
 
   <template id="gen-inspect-tpl">
-    <section class="view">
+    <section class="panel">
       <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
-        <h2>فحص / رفع مولد</h2>
+        <button class="btn back" data-return><span class="icon icon-back"></span><span>رجوع</span></button>
+        <h2>فحص/رفع مولد</h2>
       </div>
       <form id="gen-inspect-form" class="card form">
-        <div class="grid-2">
+        <div class="grid-3">
           <div class="field"><label>الكود *</label><input id="gins_code" required class="input" /></div>
           <div class="field"><label>المفتش</label><input id="gins_inspector" class="input" /></div>
-          <div class="field"><label>تأهيل كهربائي</label><input id="gins_elecRehab" class="input" placeholder="نعم / لا" /></div>
+          <div class="field"><label>تأهيل كهربائي</label><input id="gins_elecRehab" class="input" /></div>
           <div class="field"><label>تاريخ التأهيل</label><input id="gins_rehabDate" type="date" class="input" /></div>
-          <div class="field"><label>رفع المؤهل</label><input id="gins_rehabUp" class="input" placeholder="نعم / لا" /></div>
-          <div class="field"><label>رفع الفحص</label><input id="gins_checkUp" class="input" placeholder="نعم / لا" /></div>
+          <div class="field"><label>رفع المؤهل</label><input id="gins_rehabUp" class="input" /></div>
+          <div class="field"><label>رفع الفحص</label><input id="gins_checkUp" class="input" /></div>
           <div class="field grid-full"><label>ملاحظات</label><textarea id="gins_notes" class="input"></textarea></div>
         </div>
         <div class="form-actions">
-          <button type="submit" class="btn-primary flex-grow">حفظ</button>
+          <button type="submit" class="btn primary">حفظ</button>
         </div>
       </form>
     </section>
   </template>
 
-  <!-- التقارير -->
-  <template id="tpl-reports">
-    <section class="view">
-      <div class="view-head">
-        <button class="btn-back" data-return>رجوع</button>
-        <h2>التقارير والتصدير</h2>
-      </div>
-      <div class="card">
-        <p class="view-desc">
-          من هنا يمكنك إنشاء تقارير Excel رسمية للمحركات والمولدات وإصلاح أي أعمدة ناقصة في قاعدة البيانات.
-        </p>
-        <div class="row gap">
-          <button id="openExport" class="btn-primary">فتح نافذة التصدير</button>
-          <button id="runRepair" class="btn-light">إصلاح الأعمدة (Repair)</button>
-        </div>
-        <div class="hint mt">
-          أداة الإصلاح لا تحذف بيانات، فقط تضيف الأعمدة الناقصة تلقائياً لضمان عمل النظام بسلاسة.
-        </div>
-      </div>
-    </section>
-  </template>
-
-  <!-- سكربت التطبيق -->
   <script src="app.js" defer></script>
 </body>
 </html>
