@@ -6,8 +6,10 @@
 /* ---------- Config ---------- */
 let API_BASE = (localStorage.getItem('api_base') || '').trim();
 if (!API_BASE) {
-  // على السيرفر المباشر (Render)
-  API_BASE = 'https://workshop-appsys.onrender.com/api';
+  const isRender = /onrender\.com$/i.test(location.hostname);
+  API_BASE = isRender
+    ? 'https://workshop-appsys.onrender.com/api'   // عنوان الـ backend على Render
+    : 'http://127.0.0.1:9000/api';                 // للاستخدام المحلي
 }
 
 
