@@ -597,3 +597,33 @@ button{
     grid-template-columns:repeat(4,minmax(0,1fr));
   }
 }
+/* ====== Logo + Header Styling ====== */
+.topbar-centered {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  background: linear-gradient(90deg, #2563eb, #0ea5e9);
+  text-align: center;
+  padding: 14px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  border-bottom: 2px solid #e0f2fe;
+}
+
+.header-logo {
+  width: 60px;
+  height: 60px;
+  object-fit: contain;
+  border-radius: 50%;
+  background-color: #fff;
+  padding: 4px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.header-title {
+  font-family: 'Tajawal', sans-serif;
+  font-size: 1.7rem;
+  font-weight: 800;
+  color: #ffffff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+}
