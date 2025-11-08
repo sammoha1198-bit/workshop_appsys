@@ -9,6 +9,8 @@ from sqlalchemy import text
 
 # لو لديك DATABASE_URL من Render/Neon سيتم استعماله، وإلا نرجع لـ SQLite محليًا
 SQLITE_PATH = (Path(__file__).resolve().parent.parent / "workshop.db")
+DB_PATH = SQLITE_PATH  # legacy alias for old imports
+
 DATABASE_URL = os.getenv("DATABASE_URL") or f"sqlite:///{SQLITE_PATH}"
 
 is_sqlite = DATABASE_URL.startswith("sqlite")
