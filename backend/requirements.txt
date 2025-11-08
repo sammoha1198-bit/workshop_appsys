@@ -6,3 +6,4 @@ pydantic==2.9.2
 pydantic-core==2.23.4
 openpyxl==3.1.5
 python-multipart==0.0.12
+psycopg2-binary==2.9.9
