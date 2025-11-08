@@ -1,6 +1,6 @@
 /* ===========================
    Alsami Workshop - Frontend
-   Final app.js (stable v4)
+   Final app.js (mobile-first)
    =========================== */
 
 /* ---------- Config ---------- */
@@ -8,10 +8,9 @@ let API_BASE = (localStorage.getItem('api_base') || '').trim();
 if (!API_BASE) {
   const isRender = /onrender\.com$/i.test(location.hostname);
   API_BASE = isRender
-    ? 'https://workshop-appsys.onrender.com/api'   // عنوان الـ backend على Render
-    : 'http://127.0.0.1:9000/api';                 // للاستخدام المحلي
+    ? 'https://workshop-appsys.onrender.com/api'   // backend on Render
+    : 'http://127.0.0.1:9000/api';                 // local dev
 }
-
 
 /* ---------- Helpers ---------- */
 const $  = (s, el = document) => el.querySelector(s);
@@ -87,7 +86,7 @@ const routes = {
   'eng-pump':     '#tpl-eng-pump',
   'eng-elec':     '#tpl-eng-elec',
 
-  // Generators + aliases to avoid "لا يوجد قالب للعرض gen-home"
+  // Generators hub
   generators:     '#gen-home-tpl',
   'gen-home':     '#gen-home-tpl',
   genhome:        '#gen-home-tpl',
@@ -104,7 +103,6 @@ function setActive(view) {
   if (navLock) return;
   navLock = true;
   try {
-    // highlight sidebar
     $$('.nav-item').forEach(x => x.classList.toggle('active', x.dataset.view === view));
     show(view);
   } finally {
@@ -121,58 +119,52 @@ function show(view) {
   }
   mountRoot.innerHTML = '';
   mountRoot.appendChild(tpl.content.cloneNode(true));
-
-  // Common binds inside the loaded view
   bindView(view);
 }
 
 /* ---------- View Binders ---------- */
 function bindView(view) {
-  // Back buttons within any view:
+  // back buttons
   $$('[data-return]', mountRoot).forEach(btn => btn.addEventListener('click', () => setActive('home')));
 
-  // Quick tiles navigation (engines dashboard)
+  // any tiles inside the view
   $$('.tile', mountRoot).forEach(tile => {
     const v = tile.dataset.view || tile.dataset.go;
     if (v) tile.addEventListener('click', () => setActive(v));
   });
 
-  // Forms: generic binder
+  // generic forms
   $$('form.form', mountRoot).forEach(bindForm);
 
-  // Home-specific
+  // home
   if (view === 'home') {
-  // لا نُظهر البطاقات تلقائياً ولا نحمّل "آخر 3" إلا عند الطلب
-  if (window.__lastSearchHtml) $('#searchOutput').innerHTML = window.__lastSearchHtml;
+    // don't auto-load cards; keep last search if any
+    if (window.__lastSearchHtml) $('#searchOutput').innerHTML = window.__lastSearchHtml;
 
-  // عرض بطاقة "آخر 3 محركات" عند الضغط على التايل
-  $('#tileLastEngines', mountRoot)?.addEventListener('click', () => {
-    toggleHomeCards('eng');
-    const box = $('#cardLastEngines', mountRoot);
-    // حمّل البيانات لأول مرة فقط
-    if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
-  });
+    $('#tileLastEngines', mountRoot)?.addEventListener('click', () => {
+      toggleHomeCards('eng');
+      const box = $('#cardLastEngines', mountRoot);
+      if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
+    });
 
-  // عرض بطاقة "آخر 3 مولدات" عند الضغط على التايل
-  $('#tileLastGenerators', mountRoot)?.addEventListener('click', () => {
-    toggleHomeCards('gen');
-    const box = $('#cardLastGenerators', mountRoot);
-    if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
-  });
+    $('#tileLastGenerators', mountRoot)?.addEventListener('click', () => {
+      toggleHomeCards('gen');
+      const box = $('#cardLastGenerators', mountRoot);
+      if (box && !box.dataset.loaded) { renderLast3(); box.dataset.loaded = '1'; }
+    });
 
-  // عرض بطاقة "حالة النظام"
-  $('#tileStatus', mountRoot)?.addEventListener('click', () => {
-    toggleHomeCards('status');
-  });
-}
+    $('#tileStatus', mountRoot)?.addEventListener('click', () => {
+      toggleHomeCards('status');
+    });
+  }
 
-  // Reports-specific
+  // reports
   if (view === 'reports') {
     $('#openExport')?.addEventListener('click', openExport);
     $('#runRepair')?.addEventListener('click', runRepair);
   }
 
-  // Generators hub: ensure back buttons in generator templates
+  // generators forms binder
   if (view === 'gen-supply' || view === 'gen-issue' || view === 'gen-inspect') {
     $('.btn-back', mountRoot)?.addEventListener('click', () => setActive('generators'));
     bindGeneratorForms(view);
@@ -203,7 +195,8 @@ async function renderLast3() {
     $('#last3Generators')?.insertAdjacentHTML('afterbegin','<div class="muted">خطأ في التحميل</div>');
   }
 }
-// إظهار بطاقة واحدة وإخفاء الباقي في الواجهة الرئيسية
+
+// show only one home card at a time
 function toggleHomeCards(which){
   const root = mountRoot;
   const eng = $('#cardLastEngines', root);
@@ -240,22 +233,18 @@ async function doSearch() {
   }
 }
 
-
+// mobile-friendly, draft-style results
 function buildSearchHtml(key, data) {
   const engines = data?.engines || {};
   const gens    = data?.generators || {};
 
-  // Arabic labels for fields
   const L = {
-    // عام
     serial: 'الرقم التسلسلي',
     code: 'كود المولد',
     prevSite: 'الموقع السابق',
     currSite: 'الموقع الحالي',
     notes: 'ملاحظات',
     created_at: 'تاريخ الإدخال',
-
-    // محركات
     engineType: 'نوع المحرك',
     model: 'الموديل',
     supDate: 'تاريخ التوريد',
@@ -281,14 +270,11 @@ function buildSearchHtml(key, data) {
     starter: 'السلف',
     alternator: 'الدينمو',
     edate: 'تاريخ العمل الكهربائي',
-
-    // مولدات
     gType: 'السعة',
     vendor: 'الجهة المورّدة',
     elecRehab: 'تأهيل كهربائي',
   };
 
-  // format one record as plain “draft” lines
   function plainRecord(rec, idx) {
     const lines = Object.entries(rec)
       .filter(([_, v]) => v !== null && v !== undefined && v !== '')
@@ -302,7 +288,6 @@ function buildSearchHtml(key, data) {
     `;
   }
 
-  // section = title + list of records
   function section(title, list) {
     if (!list || !list.length) {
       return `
@@ -345,8 +330,7 @@ function buildSearchHtml(key, data) {
   `;
 }
 
-
-/* ---------- Export (direct to /api/export/xlsx) ---------- */
+/* ---------- Export ---------- */
 function openExport(){ $('#exportModal')?.classList.remove('hidden'); }
 function closeExport(){ $('#exportModal')?.classList.add('hidden'); }
 
@@ -357,7 +341,6 @@ async function doExport() {
 
   const btn = $('#doExport'); const old = btn?.innerHTML; if (btn) btn.innerHTML = '⏳';
   try {
-    // نرسل مباشرة لنقطة الـ backend الحالية
     const payload = {
       filename: suggestName(type, from, to),
       scope: (type === 'both') ? 'both' : (type === 'generators' ? 'generators' : 'engines'),
@@ -398,7 +381,7 @@ function parseFileName(d) {
   try { return decodeURIComponent(m[1].replace(/(^"|"$)/g,'')); } catch { return m[1]; }
 }
 
-/* ---------- Admin repair (schema) ---------- */
+/* ---------- Admin repair ---------- */
 async function runRepair() {
   try {
     const j = await fetchJSON(`${API_BASE}/admin/repair`, { method:'POST' });
@@ -411,9 +394,7 @@ async function runRepair() {
 /* ---------- IndexedDB (offline) ---------- */
 const DB_NAME = 'alsami_offline_v1';
 const STORES  = [
-  // Engines
   'eng_supply','eng_issue','eng_rehab','eng_check','eng_upload','eng_lathe','eng_pump','eng_electrical',
-  // Generators
   'gen_supply','gen_issue','gen_inspect'
 ];
 let idb;
@@ -478,17 +459,15 @@ async function syncAll() {
 
 /* ---------- Forms binder (generic) ---------- */
 function bindForm(form) {
-  const store = form.dataset.store; // مثال: eng_supply
+  const store = form.dataset.store;
   if (!store) return;
 
-  // زر مزامنة عام داخل النموذج (اختياري)
   form.querySelector('[data-sync]')?.addEventListener('click', syncAll);
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const data = Object.fromEntries(new FormData(form).entries());
 
-    // مفتاح أساسي حسب النوع
     const isGen = store.startsWith('gen_');
     const keyField = isGen ? 'code' : 'serial';
     const keyVal   = (data[keyField] || '').trim();
@@ -498,14 +477,12 @@ function bindForm(form) {
       await idbAdd(store, data);
       toast('تم الحفظ محليًا ✅');
 
-      // مزامنة مباشرة + بحث فوري بعد الحفظ
       const payload = { items: [{ store, payload: data }], returnKey: keyVal };
-      const j = await fetchJSON(`${API_BASE}/sync/batch`, {
+      await fetchJSON(`${API_BASE}/sync/batch`, {
         method:'POST', headers:{'Content-Type':'application/json'},
         body: JSON.stringify(payload)
       }).catch(()=>null);
 
-      // نفّذ بحث أفوريًا حتى لو فشلت المزامنة (يظل محليًا)
       await quickSearchAndShow(keyVal);
       form.reset();
     } catch (err) {
@@ -524,11 +501,10 @@ async function quickSearchAndShow(key) {
     setActive('home');
   } catch (e) {
     console.warn('quickSearchAndShow:', e);
-    // لا نكسر الواجهة لو البحث فشل (مثلاً السيرفر غير متاح)
   }
 }
 
-/* ---------- Generator forms (explicit bind) ---------- */
+/* ---------- Generator forms ---------- */
 function bindGeneratorForms(view) {
   if (view === 'gen-supply') {
     const form = $('#gen-supply-form', mountRoot);
@@ -615,9 +591,8 @@ function bindGeneratorForms(view) {
   }
 }
 
-/* ---------- Top-level event delegation (bind once) ---------- */
+/* ---------- Global binds ---------- */
 (function bindGlobalsOnce(){
-  // Sidebar nav (single listener)
   $('.sidebar')?.addEventListener('click', (e) => {
     const btn = e.target.closest('.nav-item');
     if (!btn) return;
@@ -625,22 +600,20 @@ function bindGeneratorForms(view) {
     if (v) setActive(v);
   });
 
-  // Search bar buttons
   $('#btnSearch')?.addEventListener('click', doSearch);
   $('#searchInput')?.addEventListener('keydown', (e)=>{ if (e.key === 'Enter') doSearch(); });
 
-  // Quick Export button in toolbar
   $('#btnQuickExport')?.addEventListener('click', openExport);
 
-  // Export modal buttons
   $('#closeExport')?.addEventListener('click', closeExport);
   $('#cancelExport')?.addEventListener('click', closeExport);
   $('#doExport')?.addEventListener('click', doExport);
 
-  // Settings modal
+  // Optional: floating or header settings button (exists if you add it)
   $('#btnSettings')?.addEventListener('click', () => {
     $('#settingsModal')?.classList.remove('hidden');
-    $('#apiBaseInput').value = API_BASE;
+    const input = $('#apiBaseInput');
+    if (input) input.value = API_BASE;
   });
   $('#closeSettings')?.addEventListener('click', () => $('#settingsModal')?.classList.add('hidden'));
   $('#cancelSettings')?.addEventListener('click', () => $('#settingsModal')?.classList.add('hidden'));
@@ -649,7 +622,7 @@ function bindGeneratorForms(view) {
     if (!v) { toast('أدخل عنوان API صحيح','error'); return; }
     API_BASE = v; localStorage.setItem('api_base', v);
     $('#settingsModal')?.classList.add('hidden');
-    toast('تم الحفظ ✅'); ping(); renderLast3();
+    toast('تم الحفظ ✅'); ping(); // don't auto-load last3
   });
 })();
 

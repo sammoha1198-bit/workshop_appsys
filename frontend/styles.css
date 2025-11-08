@@ -19,6 +19,10 @@
   --shadow-medium:0 10px 28px rgba(15,23,42,.12);
   --transition-fast:0.18s ease;
   --font-main:'Tajawal',system-ui,-apple-system,BlinkMacSystemFont,sans-serif;
+
+  /* NEW: aliases used by plain-* blocks */
+  --line: var(--border);
+  --muted: var(--text-muted);
 }
 
 /* Reset / Base */
@@ -675,3 +679,24 @@ button{
   .plain-line{font-size:14px}
   .plain-title{font-size:15px}
 }
+/* Floating Settings Button (mobile friendly) */
+.fab-settings{
+  position:fixed;
+  inset-inline-start:12px;  /* RTL-friendly: left in Arabic UI */
+  bottom:14px;
+  width:56px; height:56px;
+  border-radius:50%;
+  border:none;
+  background:var(--primary);
+  color:#fff;
+  font-size:22px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 10px 26px rgba(37,99,235,.28);
+  cursor:pointer;
+  z-index:45; /* below modal (60) */
+  transition:transform var(--transition-fast), box-shadow var(--transition-fast), background var(--transition-fast);
+}
+.fab-settings:hover{ background:var(--primary-soft); transform:translateY(-2px); box-shadow:var(--shadow-medium); }
+.fab-settings:active{ transform:translateY(0); }
